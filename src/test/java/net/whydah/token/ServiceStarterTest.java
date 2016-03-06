@@ -1,14 +1,14 @@
 package net.whydah.token;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.client.apache.ApacheHttpClient;
 import net.whydah.token.config.ApplicationMode;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
@@ -29,7 +29,7 @@ public class ServiceStarterTest {
 
     @Before
     public void initRun() throws Exception {
-        restClient = ApacheHttpClient.create();
+        restClient = ClientBuilder.newClient();
     }
 
     @AfterClass
@@ -39,29 +39,29 @@ public class ServiceStarterTest {
 
     @Test
     public void getLegalRemark() {
-        WebResource webResource = restClient.resource(baseUri);
-        String responseMsg = webResource.get(String.class);
+        WebTarget webTarget = restClient.target(baseUri);
+        String responseMsg = webTarget.request().get(String.class);
         assertTrue(responseMsg.contains("Any misuse will be prosecuted."));
     }
 
     @Test
     public void getApplicationTokenTemplate() {
-        WebResource webResource = restClient.resource(baseUri).path("/applicationtokentemplate");
-        String responseMsg = webResource.get(String.class);
+        WebTarget webTarget = restClient.target(baseUri).path("/applicationtokentemplate");
+        String responseMsg = webTarget.request().get(String.class);
         assertTrue(responseMsg.contains("<applicationtokenID>"));
     }
 
     @Test
     public void getApplicationCredentialTemplate() {
-        WebResource webResource = restClient.resource(baseUri).path("/applicationcredentialtemplate");
-        String responseMsg = webResource.get(String.class);
+        WebTarget webTarget = restClient.target(baseUri).path("/applicationcredentialtemplate");
+        String responseMsg = webTarget.request().get(String.class);
         assertTrue(responseMsg.contains("<applicationcredential>"));
     }
 
     @Test
     public void getUserCredentialTemplate() {
-        WebResource webResource = restClient.resource(baseUri).path("/usercredentialtemplate");
-        String responseMsg = webResource.get(String.class);
+        WebTarget webTarget = restClient.target(baseUri).path("/usercredentialtemplate");
+        String responseMsg = webTarget.request().get(String.class);
         assertTrue(responseMsg.contains("<usercredential>"));
     }
 
@@ -71,8 +71,8 @@ public class ServiceStarterTest {
      */
     @Test
     public void testApplicationWadl() {
-        WebResource webResource = restClient.resource(baseUri).path("application.wadl");
-        String responseMsg = webResource.get(String.class);
+        WebTarget webTarget = restClient.target(baseUri).path("application.wadl");
+        String responseMsg = webTarget.request().get(String.class);
         assertTrue(responseMsg.contains("<application"));
         assertTrue(responseMsg.contains("logonApplication"));
     }

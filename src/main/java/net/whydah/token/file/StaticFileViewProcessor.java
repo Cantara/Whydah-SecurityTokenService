@@ -1,9 +1,12 @@
 package net.whydah.token.file;
 
-import com.sun.jersey.api.view.Viewable;
-import com.sun.jersey.spi.template.ViewProcessor;
+import org.glassfish.jersey.server.mvc.Viewable;
+import org.glassfish.jersey.server.mvc.spi.TemplateProcessor;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.text.html.HTML;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 import java.io.*;
 
@@ -11,13 +14,13 @@ import java.io.*;
  * Returns static text files from /webfiles on the classpath.
  */
 @Provider
-public class StaticFileViewProcessor implements ViewProcessor<String> {
+public class StaticFileViewProcessor implements TemplateProcessor<String> {
     private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
     private static final String WEBFILES_PATH = "/webfiles";
     private static final String CONTENT_ENCODING_UTF8 = "UTF-8";
 
     @Override
-    public String resolve(String name) {
+    public String resolve(String name, MediaType mediaType) {
         log.debug("Resolving path {}", name);
         if (name.endsWith(".css") || name.endsWith("js") || name.endsWith("html")) {
             return name;
@@ -27,7 +30,7 @@ public class StaticFileViewProcessor implements ViewProcessor<String> {
     }
 
     @Override
-    public void writeTo(String filepath, Viewable viewable, OutputStream out) throws IOException {
+    public void writeTo(String filepath, Viewable viewable, MediaType mediaType, MultivaluedMap<String, Object> multivaluedMap,OutputStream out) throws IOException {
         String path = WEBFILES_PATH + filepath;
         InputStream classpathStream = getClass().getResourceAsStream(path);
         if (classpathStream == null)
@@ -40,4 +43,6 @@ public class StaticFileViewProcessor implements ViewProcessor<String> {
         }
         reader.close();
     }
+
+
 }

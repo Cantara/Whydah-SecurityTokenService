@@ -1,6 +1,6 @@
 package net.whydah.token.file;
 
-import com.sun.jersey.api.view.Viewable;
+import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

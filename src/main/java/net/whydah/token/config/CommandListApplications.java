@@ -3,12 +3,12 @@ package net.whydah.token.config;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.client.apache.ApacheHttpClient;
 import org.slf4j.Logger;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.net.URI;
 
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
@@ -40,16 +40,16 @@ public class CommandListApplications extends HystrixCommand<String> {
     protected String run() {
         log.trace("CommandListApplications - myAppTokenId={}", myAppTokenId);
 
-        WebResource uasResource = ApacheHttpClient.create().resource(userAdminServiceUri);
+        WebTarget uasResource = ClientBuilder.newClient().target(userAdminServiceUri);
 
-        WebResource webResource = uasResource.path(myAppTokenId).path(adminUserTokenId).path("/applications");
+        WebTarget webResource = uasResource.path(myAppTokenId).path(adminUserTokenId).path("/applications");
         log.debug("CommandListApplications - Calling applications " + webResource.toString());
-        ClientResponse response = webResource.type(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        Response response = webResource.request(MediaType.APPLICATION_JSON).get(Response.class);
 
         if (response.getStatus() == FORBIDDEN.getStatusCode()) {
             log.info("CommandListApplications -  User authentication failed with status code " + response.getStatus());
             return null;
-            //throw new IllegalArgumentException("Log on failed. " + ClientResponse.Status.FORBIDDEN);
+            //throw new IllegalArgumentException("Log on failed. " + Response.Status.FORBIDDEN);
         }
         if (response.getStatus() == OK.getStatusCode()) {
             String responseJson = response.toString();

@@ -1,6 +1,7 @@
 package net.whydah.token.user;
 
-import com.sun.jersey.api.view.Viewable;
+
+import org.glassfish.jersey.server.mvc.Viewable;
 
 import javax.ws.rs.core.Response;
 

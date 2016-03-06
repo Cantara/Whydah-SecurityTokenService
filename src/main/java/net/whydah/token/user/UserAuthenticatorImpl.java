@@ -2,13 +2,13 @@ package net.whydah.token.user;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.client.apache.ApacheHttpClient;
 import net.whydah.token.config.AppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
@@ -20,7 +20,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 
 
     private URI useradminservice;
-    private final WebResource uasResource;
+    private final WebTarget uasResource;
     private final UserTokenFactory userTokenFactory;
 
 
@@ -28,7 +28,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     @Inject
     public UserAuthenticatorImpl(@Named("useradminservice") URI useradminservice, UserTokenFactory userTokenFactory) {
         this.useradminservice = useradminservice;
-        this.uasResource = ApacheHttpClient.create().resource(useradminservice);
+        this.uasResource = ClientBuilder.newClient().target(useradminservice);
         this.userTokenFactory = userTokenFactory;
     }
 
@@ -36,8 +36,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     public UserToken logonUser(final String applicationTokenId, final String appTokenXml, final String userCredentialXml) {
         log.trace("logonUser - Calling UserAdminService at " + useradminservice + " appTokenXml:" + appTokenXml + " userCredentialXml:" + userCredentialXml);
         try {
-            WebResource webResource = uasResource.path(applicationTokenId).path(USER_AUTHENTICATION_PATH);
-            ClientResponse response = webResource.type(MediaType.APPLICATION_XML).post(ClientResponse.class, userCredentialXml);
+            WebTarget webResource = uasResource.path(applicationTokenId).path(USER_AUTHENTICATION_PATH);
+            Response response = webResource.request(MediaType.APPLICATION_XML).post(Entity.xhtml(userCredentialXml));
 
             UserToken userToken = getUserToken(appTokenXml, response);
             AppConfig.updateApplinks(useradminservice,applicationTokenId,response.toString());
@@ -52,9 +52,9 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     @Override
     public UserToken createAndLogonUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String fbUserXml) {
         log.trace("createAndLogonUser - Calling UserAdminService at with appTokenXml:\n" + appTokenXml + "userCredentialXml:\n" + userCredentialXml + "fbUserXml:\n" + fbUserXml);
-        WebResource webResource = uasResource.path(applicationtokenid).path(USER_AUTHENTICATION_PATH).path(CREATE_AND_LOGON_OPERATION);
+        WebTarget webResource = uasResource.path(applicationtokenid).path(USER_AUTHENTICATION_PATH).path(CREATE_AND_LOGON_OPERATION);
         log.debug("createAndLogonUser - Calling createandlogon " + webResource.toString());
-        ClientResponse response = webResource.type(MediaType.APPLICATION_XML).post(ClientResponse.class, fbUserXml);
+        Response response = webResource.request(MediaType.APPLICATION_XML).post(Entity.xml(fbUserXml));
 
         UserToken token = getUserToken(appTokenXml, response);
         token.setSecurityLevel("0");  // 3rd party token as source = securitylevel=0
@@ -62,9 +62,9 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     }
 
 
-    private UserToken getUserToken(String appTokenXml, ClientResponse response) {
+    private UserToken getUserToken(String appTokenXml, Response response) {
         if (response.getStatus() == Response.Status.OK.getStatusCode() || response.getStatus() == Response.Status.NO_CONTENT.getStatusCode()){
-            String userAggregateXML = response.getEntity(String.class);
+            String userAggregateXML = response.readEntity(String.class);
             log.debug("Response from UserAdminService: {}", userAggregateXML);
             if (userAggregateXML.contains("logonFailed")) {
                 throw new AuthenticationFailedException("Authentication failed.");
@@ -76,7 +76,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
             return userToken;
 
         } else  {
-            log.error("Response from UAS: {}: {}", response.getStatus(), response.getEntity(String.class));
+            log.error("Response from UAS: {}: {}", response.getStatus(), response.readEntity(String.class));
             throw new AuthenticationFailedException("Authentication failed. Status code " + response.getStatus());
         }
     }

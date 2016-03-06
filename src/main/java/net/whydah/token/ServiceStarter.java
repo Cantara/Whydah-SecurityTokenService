@@ -3,7 +3,6 @@ package net.whydah.token;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceFilter;
-import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import net.whydah.token.config.AppConfig;
 import net.whydah.token.config.ApplicationMode;
 import net.whydah.token.config.SecurityTokenServiceModule;
@@ -67,8 +66,8 @@ public class ServiceStarter {
         GuiceFilter filter = new GuiceFilter();
         adapter.addFilter(filter, "guiceFilter", null);
 
-        GuiceContainer container = new GuiceContainer(injector);
-        adapter.setServletInstance(container);
+//        GuiceContainer container = new GuiceContainer(injector);
+//        adapter.setServletInstance(container);
 
         webappPort = Integer.valueOf(appConfig.getProperty("service.port"));
         httpServer = new HttpServer();

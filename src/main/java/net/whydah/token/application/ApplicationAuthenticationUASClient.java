@@ -1,9 +1,5 @@
 package net.whydah.token.application;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.client.apache.ApacheHttpClient;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import net.whydah.sso.application.mappers.ApplicationCredentialMapper;
 import net.whydah.sso.application.mappers.ApplicationTokenMapper;
 import net.whydah.sso.application.types.ApplicationCredential;
@@ -12,8 +8,13 @@ import net.whydah.token.config.AppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import java.util.Random;
 
 
@@ -35,14 +36,14 @@ public class ApplicationAuthenticationUASClient {
         //ApplicationToken stsToken = getSTSApplicationToken();
         AuthenticatedApplicationRepository.addApplicationToken(stsToken);
 
-        WebResource uasResource = ApacheHttpClient.create().resource(useradminservice);
+        WebTarget uasResource = ClientBuilder.newClient().target(useradminservice);
         int uasResponseCode = 0;
-        WebResource webResource = uasResource.path(stsToken.getApplicationTokenId()).path(APPLICATION_AUTH_PATH);
+        WebTarget webResource = uasResource.path(stsToken.getApplicationTokenId()).path(APPLICATION_AUTH_PATH);
         log.info("checkAppsecretFromUAS - Calling application auth " + webResource.toString());
-        MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
+        MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
         formData.add(APP_CREDENTIAL_XML, ApplicationCredentialMapper.toXML(applicationCredential));
         try {
-            ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(ClientResponse.class, formData);
+            Response response = webResource.request(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(Entity.form(formData));
             uasResponseCode = response.getStatus();
             log.info("Response from UAS:" + uasResponseCode);
             if (uasResponseCode == 204) {

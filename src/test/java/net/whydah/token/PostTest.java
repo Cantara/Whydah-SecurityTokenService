@@ -1,22 +1,20 @@
 package net.whydah.token;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.client.apache.ApacheHttpClient;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import net.whydah.sso.application.helpers.ApplicationTokenXpathHelper;
 import net.whydah.sso.application.mappers.ApplicationCredentialMapper;
-import net.whydah.sso.application.mappers.ApplicationTokenMapper;
 import net.whydah.sso.application.types.ApplicationCredential;
-import net.whydah.sso.application.types.ApplicationToken;
 import net.whydah.token.config.ApplicationMode;
 import net.whydah.token.user.UserCredential;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.*;
 import java.net.URI;
 
 import static org.junit.Assert.assertTrue;
@@ -36,7 +34,7 @@ public class PostTest {
 
     @Before
     public void initRun() throws Exception {
-        restClient = ApacheHttpClient.create();
+        restClient = ClientBuilder.newClient();
     }
 
     @AfterClass
@@ -61,13 +59,13 @@ public class PostTest {
         UserCredential user = new UserCredential("nalle", "puh");
 
 
-        WebResource userTokenResource = restClient.resource(baseUri).path("user").path(applicationtokenid).path("/usertoken");
-        MultivaluedMap<String,String> formData = new MultivaluedMapImpl();
+        WebTarget userTokenResource = restClient.target(baseUri).path("user").path(applicationtokenid).path("/usertoken");
+        MultivaluedMap<String,String> formData = new MultivaluedHashMap<>();
         formData.add("apptoken", apptokenxml);
         formData.add("usercredential", user.toXML());
-        ClientResponse response = userTokenResource.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(ClientResponse.class, formData);
-        System.out.println("Calling:"+userTokenResource.getURI());
-        String responseXML = response.getEntity(String.class);
+        Response response = userTokenResource.request(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(Entity.form(formData));
+        System.out.println("Calling:"+userTokenResource.getUri());
+        String responseXML = response.readEntity(String.class);
         System.out.println("responseXML:\n"+responseXML);
         assertTrue(responseXML.contains("usertoken"));
         assertTrue(responseXML.contains("DEFCON"));
@@ -81,11 +79,11 @@ public class PostTest {
     }
 
     private String logonApplication(String appCredential) {
-        WebResource logonResource = restClient.resource(baseUri).path("logon");
-        MultivaluedMap<String,String> formData = new MultivaluedMapImpl();
+        WebTarget logonResource = restClient.target(baseUri).path("logon");
+        MultivaluedMap<String,String> formData = new MultivaluedHashMap<>();
         formData.add("applicationcredential", appCredential);
-        ClientResponse response = logonResource.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(ClientResponse.class, formData);
-        return response.getEntity(String.class);
+        Response response = logonResource.request(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(Entity.form(formData));
+        return response.readEntity(String.class);
     }
 
     private String getApplicationTokenIdFromAppToken(String appTokenXML) {

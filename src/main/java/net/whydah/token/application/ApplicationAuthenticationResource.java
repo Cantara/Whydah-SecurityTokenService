@@ -1,11 +1,6 @@
 package net.whydah.token.application;
 
 import com.google.inject.Inject;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.view.Viewable;
-import com.sun.jersey.client.apache.ApacheHttpClient;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import net.whydah.sso.application.helpers.ApplicationCredentialHelper;
 import net.whydah.sso.application.mappers.ApplicationCredentialMapper;
 import net.whydah.sso.application.mappers.ApplicationTokenMapper;
@@ -14,13 +9,12 @@ import net.whydah.sso.application.types.ApplicationToken;
 import net.whydah.token.config.AppConfig;
 import net.whydah.token.config.ApplicationMode;
 import net.whydah.token.user.UserCredential;
-
+import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Random;
