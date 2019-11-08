@@ -24,7 +24,7 @@
         <whydah.admin.sdk.version>2.5.26</whydah.admin.sdk.version>
         <org.valuereporter.agent>1.0.8</org.valuereporter.agent>
         <jersey-version>1.19.4</jersey-version>
-        <grizzy-version>2.3.33</grizzy-version>
+        <grizzy-version>2.4.4</grizzy-version>
         <guice-version>4.2.1</guice-version>
         <slf4j.version>1.7.28</slf4j.version>
         <jetty.plugin.version>9.4.21.v20190926</jetty.plugin.version>
