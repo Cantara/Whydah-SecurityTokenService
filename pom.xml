@@ -21,7 +21,7 @@
         <whydah.admin.sdk.version>2.6.14</whydah.admin.sdk.version>
         <org.valuereporter.agent>1.0.20</org.valuereporter.agent>
         <jersey-version>1.19.4</jersey-version>
-        <grizzy-version>2.3.33</grizzy-version>
+        <grizzy-version>3.0.0</grizzy-version>
         <guice-version>4.2.3</guice-version>
         <slf4j.version>1.7.30</slf4j.version>
         <jetty.plugin.version>9.4.33.v20201020</jetty.plugin.version>
@@ -274,8 +274,8 @@
                                 </filter>
                             </filters>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
