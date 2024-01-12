@@ -1,6 +1,11 @@
 package net.whydah.sts;
 
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import net.whydah.sso.config.ApplicationMode;
 import org.apache.http.HttpEntity;
@@ -24,6 +29,8 @@ public class ServiceStarterTest {
     private static URI baseUri;
     CloseableHttpClient restClient;
 
+    Client client;
+
     @BeforeClass
     public static void init() throws Exception {
         System.setProperty(ApplicationMode.IAM_MODE_KEY, ApplicationMode.DEV);
@@ -35,6 +42,7 @@ public class ServiceStarterTest {
     @Before
     public void initRun() throws Exception {
         restClient = HttpClients.createDefault();
+        client = ClientBuilder.newClient();
     }
 
     @AfterClass
@@ -72,6 +80,16 @@ public class ServiceStarterTest {
 //        WebResource webResource = restClient.resource(baseUri);
 //        String responseMsg = webResource.get(String.class);
 //        assertTrue(responseMsg.contains("Any misuse will be prosecuted."));
+    }
+
+    @Test
+    public void getLegalRemark2() {
+        WebTarget webResource = client.target(baseUri);
+        Invocation.Builder invocationBuilder =
+                webResource.request(MediaType.TEXT_PLAIN_TYPE);
+        Response response = invocationBuilder.get();
+        String responseMsg = response.readEntity(String.class);
+        assertTrue(responseMsg.contains("Any misuse will be prosecuted."));
     }
 
     @Test
