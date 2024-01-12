@@ -17,12 +17,15 @@ import org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder;
 import org.glassfish.grizzly.servlet.WebappContext;
 import org.glassfish.grizzly.strategies.WorkerThreadIOStrategy;
 import org.glassfish.grizzly.threadpool.ThreadPoolConfig;
+import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.valuereporter.client.activity.ObservedActivityDistributer;
 
 import java.io.IOException;
+import java.net.URI;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
@@ -98,6 +101,7 @@ public class ServiceStarter {
         }
 
 
+
         //final WebappContext context = new WebappContext("grizzly", CONTEXTPATH);
         //GuiceContainer container = new GuiceContainer(injector);
         final WebappContext context2 = new WebappContext("grizzly", CONTEXTPATH);
@@ -127,7 +131,14 @@ public class ServiceStarter {
         } catch (Exception e) {
             webappPort = 9998;
         }
-        httpServer = new HttpServer();
+        ResourceConfig config = new ResourceConfig().packages("net.whydah");
+        // Create and start a grizzly http server
+        //HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
+
+        String BASE_URI= "http://localhost:"+webappPort+"/"+CONTEXTPATH+"/";
+        httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
+        //new HttpServer();
+
         //ServerConfiguration serverconfig = httpServer.getServerConfiguration();
         //serverconfig.addHttpHandler(handler, "/");
         NetworkListener listener = new NetworkListener("grizzly server", NetworkListener.DEFAULT_NETWORK_HOST, webappPort);
@@ -155,7 +166,7 @@ public class ServiceStarter {
         httpServer.addListener(listener);
 
 
-        context2.deploy(httpServer);
+        //context2.deploy(httpServer);
 
         httpServer.start();
 
@@ -164,9 +175,9 @@ public class ServiceStarter {
 
         log.info("SecurityTokenService started on port {}, IAM_MODE = {}", webappPort, ApplicationMode.getApplicationMode());
         log.info("Version: {}", IMPLEMENTATION_VERSION);
-        log.info("Status: http://localhost:{}{}/", webappPort, CONTEXTPATH);
-        log.info("Health: http://localhost:{}{}/health", webappPort, CONTEXTPATH);
-        log.info("WADL:   http://localhost:{}{}/application.wadl", webappPort, CONTEXTPATH);
+        log.info("Status: http://localhost:{}/{}/", webappPort, CONTEXTPATH);
+        log.info("Health: http://localhost:{}/{}/health", webappPort, CONTEXTPATH);
+        log.info("WADL:   http://localhost:{}/{}/application.wadl", webappPort, CONTEXTPATH);
         log.info("Testpage = {}, TestDriverWeb:   http://localhost:{}{}/", appConfig.getProperty("testpage"), webappPort, CONTEXTPATH);
     }
 
