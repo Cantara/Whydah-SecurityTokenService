@@ -67,7 +67,18 @@ public class ApplicationResource {
             return Response.ok().entity(new Viewable("/testpage.html.ftl", model)).header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT").build();
         } else {
             //log.debug("Showing prod page");
-            return Response.ok().entity(new Viewable("/html/prodwelcome.html")).header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT").build();
+//            return Response.ok().entity(new Viewable("/html/prodwelcome.html")).header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT").build();
+            return Response.ok().entity("<!DOCTYPE html>\n" +
+                    "<html>\n" +
+                    "\t<head>\n" +
+                    "        <title>Whydah SSO SecurityTokenService</title>\n" +
+                    "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n" +
+                    "    </head>\n" +
+                    "    <body>\n" +
+                    "        This is Whydah SSO SecurityTokenService. Any misuse will be prosecuted.<br><br>\n" +
+                    "        The service description (WADL) is available <a href=\"/tokenservice/application.wadl\">here</a><br>\n" +
+                    "    </body>\n" +
+                    "</html>").header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT").build();
         }
     }
 
