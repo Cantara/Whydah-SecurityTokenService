@@ -2,6 +2,8 @@ package net.whydah.sts;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.http.HttpServletMapping;
 import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sts.config.AppConfig;
@@ -94,21 +96,21 @@ public class ServiceStarter {
             log.warn("Error in valueReporter property configuration - unable to start ObservedActivityDistributer", e);
         }
 
-        /*
+
         //final WebappContext context = new WebappContext("grizzly", CONTEXTPATH);
         //GuiceContainer container = new GuiceContainer(injector);
         final WebappContext context2 = new WebappContext("WebappContext", CONTEXTPATH);
         final ServletRegistration servletRegistration = context2.addServlet("ServletContainer", CONTEXTPATH);
         //final ServletRegistration servletRegistration = container.
-        //context.addServlet("ServletContainer", (Servlet) container.getServletContext().getServlets().nextElement());
+        //context2.addServlet("ServletContainer", (Servlet) container.getServletContext().getServlets().nextElement());
 //                .addServlet("ServletContainer", container);
         servletRegistration.addMapping("/*");
         servletRegistration.setInitParameter("com.sun.jersey.config.property.packages", "net.whydah");
         servletRegistration.setInitParameter("com.sun.jersey.api.json.POJOMappingFeature", "true");
-        context2.addFilter("guiceFilter", "GuiceFilter.class");
+        //context2.addFilter("guiceFilter", "GuiceFilter.class");
         //.addFilter("guiceFilter", GuiceFilter.class);
-*/
-        final WebappContext context = new WebappContext("grizzly", CONTEXTPATH);
+
+        //final WebappContext context = new WebappContext("grizzly", CONTEXTPATH);
         //GuiceContainer container = new GuiceContainer(injector);
 //        final ServletRegistration servletRegistration = context.addServlet("ServletContainer", new SecurityTokenServiceModule(appConfig, appMode));
 //        servletRegistration.addMapping("/*");
@@ -152,7 +154,7 @@ public class ServiceStarter {
         httpServer.addListener(listener);
 
 
-        context.deploy(httpServer);
+        context2.deploy(httpServer);
 
         httpServer.start();
 
