@@ -53,7 +53,7 @@ public class ServiceStarterTest {
     @Test
     public void getLegalRemark() {
         HttpGet request = new HttpGet(baseUri);
-        request.setHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
+        request.setHeader(HttpHeaders.ACCEPT, MediaType.TEXT_HTML);
         CloseableHttpResponse response;
         try {
             response = restClient.execute(request);
@@ -86,7 +86,7 @@ public class ServiceStarterTest {
     public void getLegalRemark2() {
         WebTarget webResource = client.target(baseUri);
         Invocation.Builder invocationBuilder =
-                webResource.request(MediaType.TEXT_PLAIN_TYPE);
+                webResource.request(MediaType.TEXT_HTML);
         Response response = invocationBuilder.get();
         String responseMsg = response.readEntity(String.class);
         assertTrue(responseMsg.contains("Any misuse will be prosecuted."));
@@ -128,6 +128,13 @@ public class ServiceStarterTest {
 //        WebResource webResource = restClient.resource(baseUri).path("/applicationcredentialtemplate");
 //        String responseMsg = webResource.get(String.class);
 //        assertTrue(responseMsg.contains("<applicationcredential>"));
+        WebTarget webResource = client.target(baseUri).path("/applicationcredentialtemplate");
+        Invocation.Builder invocationBuilder =
+                webResource.request(MediaType.APPLICATION_XML);
+        Response response = invocationBuilder.get();
+        String responseMsg = response.readEntity(String.class);
+        assertTrue(responseMsg.contains("<applicationcredential>"));
+
     }
 
     @Test
@@ -135,6 +142,13 @@ public class ServiceStarterTest {
 //        WebResource webResource = restClient.resource(baseUri).path("/usercredentialtemplate");
 //        String responseMsg = webResource.get(String.class);
 //        assertTrue(responseMsg.contains("<usercredential>"));
+        WebTarget webResource = client.target(baseUri).path("/usercredentialtemplate");
+        Invocation.Builder invocationBuilder =
+                webResource.request(MediaType.APPLICATION_XML);
+        Response response = invocationBuilder.get();
+        String responseMsg = response.readEntity(String.class);
+        assertTrue(responseMsg.contains("<usercredential>"));
+
     }
 
     @Test
@@ -147,6 +161,13 @@ public class ServiceStarterTest {
 //        WebResource webResource = restClient.resource(baseUri).path("/health");
 //        String responseMsg = webResource.get(String.class);
 //        assertTrue(responseMsg.contains("SecurityTokenService") || responseMsg.contains("127.0.0.1"));
+        WebTarget webResource = client.target(baseUri).path("/health");
+        Invocation.Builder invocationBuilder =
+                webResource.request(MediaType.APPLICATION_XML);
+        Response response = invocationBuilder.get();
+        String responseMsg = response.readEntity(String.class);
+        assertTrue(responseMsg.contains("SecurityTokenService") || responseMsg.contains("127.0.0.1"));
+
     }
     /**
      * Test if a WADL document is available at the relative path
@@ -158,5 +179,12 @@ public class ServiceStarterTest {
 //        String responseMsg = webResource.get(String.class);
 //        assertTrue(responseMsg.contains("<application"));
 //        assertTrue(responseMsg.contains("logonApplication"));
+        WebTarget webResource = client.target(baseUri).path("application.wadl");
+        Invocation.Builder invocationBuilder =
+                webResource.request(MediaType.APPLICATION_XML);
+        Response response = invocationBuilder.get();
+        String responseMsg = response.readEntity(String.class);
+        assertTrue(responseMsg.contains("logonApplication"));
+
     }
 }
