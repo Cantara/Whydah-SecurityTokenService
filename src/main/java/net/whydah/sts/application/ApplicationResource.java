@@ -58,7 +58,7 @@ public class ApplicationResource {
     @GET
     @Produces(MediaType.TEXT_HTML)
     public Response info() {
-        if ("enabled".equals(appConfig.getProperty("testpage"))) {
+        if (appConfig!=null && "enabled".equals(appConfig.getProperty("testpage"))) {
             //log.debug("Showing test page");
             HashMap<String, Object> model = new HashMap<String, Object>();
             UserCredential testUserCredential = new UserCredential("whydah_user", "whydah_password");

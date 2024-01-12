@@ -135,6 +135,7 @@ public class ServiceStarter {
         // Create and start a grizzly http server
         //HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
 
+        System.out.println("http://localhost:"+webappPort+""+CONTEXTPATH+"/");
         String BASE_URI= "http://localhost:"+webappPort+""+CONTEXTPATH+"/";
         httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
         //new HttpServer();
@@ -163,7 +164,7 @@ public class ServiceStarter {
         listener.setTransport(transport);
 
 
-        httpServer.addListener(listener);
+        //httpServer.addListener(listener);
 
 
         //context2.deploy(httpServer);
