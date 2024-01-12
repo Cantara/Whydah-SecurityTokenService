@@ -1,6 +1,6 @@
 package net.whydah.sts.errorhandling;
 
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.Response.Status;
 
 
 

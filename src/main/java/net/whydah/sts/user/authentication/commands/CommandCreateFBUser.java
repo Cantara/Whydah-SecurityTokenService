@@ -1,6 +1,7 @@
 package net.whydah.sts.user.authentication.commands;
 
 import com.github.kevinsawicki.http.HttpRequest;
+import jakarta.ws.rs.core.MediaType;
 import net.whydah.sso.commands.baseclasses.BaseHttpPostHystrixCommand;
 import net.whydah.sso.ddd.model.application.ApplicationTokenID;
 import net.whydah.sso.user.mappers.UserTokenMapper;
@@ -8,7 +9,6 @@ import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.errorhandling.AuthenticationFailedException;
 import net.whydah.sts.threat.ThreatResource;
 
-import javax.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.UUID;
 

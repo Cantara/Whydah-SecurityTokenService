@@ -1,20 +1,20 @@
 package net.whydah.sts.config;
 
-import com.sun.jersey.api.view.Viewable;
-import com.sun.jersey.spi.template.ViewProcessor;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.ext.beans.BeansWrapper;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateModel;
+import jakarta.servlet.ServletContext;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.Provider;
+import org.glassfish.jersey.server.mvc.Viewable;
+import org.glassfish.jersey.server.mvc.spi.AbstractTemplateProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.ext.Provider;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -52,13 +52,15 @@ import java.util.Map;
  * @author Olivier Grisel ogrisel@nuxeo.com // ViewProcessor refactoring
  */
 @Provider
-public class FreemarkerViewProcessor implements ViewProcessor<Template> {
+public class FreemarkerViewProcessor extends AbstractTemplateProcessor<Template> {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private Configuration freemarkerConfig;
 
-    public FreemarkerViewProcessor() {
+    public FreemarkerViewProcessor(jakarta.ws.rs.core.Configuration config, ServletContext servletContext, String propertySuffix, String... supportedExtensions) {
+        super(config, servletContext, propertySuffix, supportedExtensions);
     }
+
 
     /**
      * Catch any exception generated during template processing.
@@ -95,7 +97,8 @@ public class FreemarkerViewProcessor implements ViewProcessor<Template> {
         return freemarkerConfig;
     }
 
-    public Template resolve(final String path) {
+    @Override
+    protected Template resolve(String path, Reader reader) throws Exception {
         log.debug("Resolving path {}", path);
         if(!path.endsWith(".ftl")) {
             log.debug("{} not handled by FreemarkerViewProcessor", path);
@@ -166,6 +169,38 @@ public class FreemarkerViewProcessor implements ViewProcessor<Template> {
             template.process(vars, writer);
         } catch (Exception e) {
             onProcessException(e, template, out);
+        }
+    }
+
+    @Override
+    public void writeTo(Template template, Viewable viewable, MediaType mediaType, MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream) throws IOException {
+        template.setEncoding("UTF-8");
+        template.setOutputEncoding("UTF-8");
+
+        outputStream.flush(); // send status + headers
+
+        Object model = viewable.getModel();
+        final Map<String, Object> vars = new HashMap<>();
+        if (model instanceof Map<?, ?>) {
+            vars.putAll((Map<String, Object>) model);
+        } else {
+            vars.put("it", model);
+        }
+        if (multivaluedMap != null) {
+            vars.putAll(multivaluedMap);
+
+        }
+
+        //  Add the static members to the statics field
+        BeansWrapper w = new BeansWrapper();
+        TemplateModel statics = w.getStaticModels();
+        vars.put("statics", statics); // map is java.util.Map
+
+        final OutputStreamWriter writer = new OutputStreamWriter(outputStream, "UTF-8");
+        try {
+            template.process(vars, writer);
+        } catch (Exception e) {
+            onProcessException(e, template, outputStream);
         }
     }
 }

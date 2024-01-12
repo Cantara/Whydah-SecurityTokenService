@@ -1,6 +1,9 @@
 package net.whydah.sts.threat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import net.whydah.sso.whydah.DEFCON;
 import net.whydah.sso.whydah.ThreatSignal;
 import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
@@ -8,9 +11,6 @@ import net.whydah.sts.health.HealthResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.concurrent.Executors;
 
 @Path("/threat")

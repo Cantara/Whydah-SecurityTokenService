@@ -20,19 +20,17 @@
         <service.name>Whydah-SecurityTokenService</service.name>
         <whydah.admin.sdk.version>2.22.0</whydah.admin.sdk.version>
         <org.valuereporter.agent>1.10.2</org.valuereporter.agent>
-        <jersey-version>1.19.4</jersey-version>
+        <jersey-version>3.1.5</jersey-version>
         <guice-version>5.1.0</guice-version>
         <slf4j.version>1.7.36</slf4j.version>
-        <!--
         <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>11.0.14</jetty.plugin.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <java.version>11</java.version>
-        -->
-        
-        <grizzy-version>2.3.33</grizzy-version>
+
+        <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>9.4.52.v20230823</jetty.plugin.version>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -118,41 +116,39 @@
 
 
         <!-- https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api -->
-        
-        <!--<dependency>
+
+        <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
             <version>6.0.0</version>
         </dependency>
-        -->
-         <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.servlet</artifactId>
-            <version>3.1.1</version>
-        </dependency>
 
-
+        <!-- https://mvnrepository.com/artifact/jakarta.ws.rs/jakarta.ws.rs-api -->
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>4.0.1</version>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>3.1.0</version>
         </dependency>
-        <!-- Thanks for using https://jar-download.com -->
+
 
 
         <!--jersey -->
+        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-server -->
         <dependency>
-            <groupId>com.sun.jersey</groupId>
+            <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-server</artifactId>
             <version>${jersey-version}</version>
         </dependency>
+
         <dependency>
-            <groupId>com.sun.jersey.contribs</groupId>
-            <artifactId>jersey-guice</artifactId>
+            <groupId>org.glassfish.jersey.ext</groupId>
+            <artifactId>jersey-mvc</artifactId>
             <version>${jersey-version}</version>
         </dependency>
+        <!-- Thanks for using https://jar-download.com -->
+
         <dependency>
-            <groupId>com.sun.jersey</groupId>
+            <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
             <version>${jersey-version}</version>
             <scope>test</scope>
@@ -176,12 +172,6 @@
             <version>${guice-version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <version>2.5</version>
-            <scope>provided</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.freemarker</groupId>
@@ -189,6 +179,19 @@
             <version>2.3.32</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.ext/jersey-mvc-freemarker -->
+        <dependency>
+            <groupId>org.glassfish.jersey.ext</groupId>
+            <artifactId>jersey-mvc-freemarker</artifactId>
+            <version>3.1.5</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-grizzly2-servlet</artifactId>
+            <version>3.1.5</version>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -225,23 +228,6 @@
             <artifactId>xmlunit</artifactId>
             <version>1.6</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-            <version>2.1.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey.contribs</groupId>
-            <artifactId>jersey-apache-client</artifactId>
-            <version>${jersey-version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>

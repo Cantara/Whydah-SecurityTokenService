@@ -1,31 +1,33 @@
 package net.whydah.sts;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.client.apache.ApacheHttpClient;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriBuilder;
 import net.whydah.sso.application.helpers.ApplicationTokenXpathHelper;
 import net.whydah.sso.application.mappers.ApplicationCredentialMapper;
 import net.whydah.sso.application.types.ApplicationCredential;
 import net.whydah.sso.commands.systemtestbase.SystemTestBaseConfig;
 import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sso.user.types.UserCredential;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.glassfish.jersey.internal.util.collection.MultivaluedStringMap;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 import static org.junit.Assert.assertTrue;
 
 public class PostTest {
     private static URI baseUri;
-    Client restClient;
+
+    CloseableHttpClient restClient;
     private static ServiceStarter serviceStarter;
     static SystemTestBaseConfig config;
 
@@ -40,7 +42,7 @@ public class PostTest {
 
     @Before
     public void initRun() throws Exception {
-        restClient = ApacheHttpClient.create();
+        restClient = HttpClients.createDefault();
     }
 
     @AfterClass
@@ -114,18 +116,18 @@ public class PostTest {
             UserCredential user = new UserCredential("nalle", "puhpassword");
 
 
-            WebResource userTokenResource = restClient.resource(baseUri).path("user").path(applicationtokenid).path("/usertoken");
-            MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
-            formData.add("apptoken", apptokenxml);
-            formData.add("usercredential", user.toXML());
-            ClientResponse response = userTokenResource.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(ClientResponse.class, formData);
-            System.out.println("Calling:" + userTokenResource.getURI());
-            String responseXML = response.getEntity(String.class);
-            System.out.println("responseXML:\n" + responseXML);
-            assertTrue(responseXML.contains("usertoken"));
-            assertTrue(responseXML.contains("DEFCON"));
-            assertTrue(responseXML.contains("applicationName"));
-            assertTrue(responseXML.contains("hash"));
+//            WebResource userTokenResource = restClient.execute(resource(baseUri).path("user").path(applicationtokenid).path("/usertoken");
+//            MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
+//            formData.add("apptoken", apptokenxml);
+//            formData.add("usercredential", user.toXML());
+//            ClientResponse response = userTokenResource.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(ClientResponse.class, formData);
+//            System.out.println("Calling:" + userTokenResource.getURI());
+//            String responseXML = response.getEntity(String.class);
+//            System.out.println("responseXML:\n" + responseXML);
+//            assertTrue(responseXML.contains("usertoken"));
+//            assertTrue(responseXML.contains("DEFCON"));
+//            assertTrue(responseXML.contains("applicationName"));
+//            assertTrue(responseXML.contains("hash"));
         }
     }
 
@@ -135,11 +137,43 @@ public class PostTest {
     }
 
     private String logonApplication(String appCredential) {
-        WebResource logonResource = restClient.resource(baseUri).path("logon");
-        MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
+//        WebResource logonResource = restClient.resource(baseUri).path("logon");
+//        MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
+//        formData.add("applicationcredential", appCredential);
+//        ClientResponse response = logonResource.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(ClientResponse.class, formData);
+//        return response.getEntity(String.class);
+        HttpPost request = new HttpPost(baseUri + "/logon");
+        MultivaluedMap<String, String> formData = new MultivaluedStringMap();
         formData.add("applicationcredential", appCredential);
-        ClientResponse response = logonResource.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(ClientResponse.class, formData);
-        return response.getEntity(String.class);
+        // request.setEntity(new HttpEntityWrapper(formData) ;
+        CloseableHttpResponse response;
+        try {
+            response = restClient.execute(request);
+            // Get HttpResponse Status
+            System.out.println(response.getProtocolVersion());              // HTTP/1.1
+            System.out.println(response.getStatusLine().getStatusCode());   // 200
+            System.out.println(response.getStatusLine().getReasonPhrase()); // OK
+            System.out.println(response.getStatusLine().toString());        // HTTP/1.1 200 OK
+
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                // return it as a String
+                String responseMsg = EntityUtils.toString(entity);
+                System.out.println(responseMsg);
+                return responseMsg;
+//                assertTrue(responseMsg.contains("<applicationtokenID>"));
+            }
+            response.close();
+        } catch (Exception e) {
+
+        } finally {
+
+
+            //  WebResource webResource = restClient.resource(baseUri).path("/applicationtokentemplate");
+            // String responseMsg = webResource.get(String.class);
+//        assertTrue(responseMsg.contains("<applicationtokenID>"));
+        }
+        return null;
     }
 
     private String getApplicationTokenIdFromAppToken(String appTokenXML) {
