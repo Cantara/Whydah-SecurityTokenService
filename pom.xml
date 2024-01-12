@@ -22,7 +22,7 @@
         <org.valuereporter.agent>1.10.2</org.valuereporter.agent>
         <jersey-version>3.1.5</jersey-version>
         <guice-version>5.1.0</guice-version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.10</slf4j.version>
         <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>11.0.14</jetty.plugin.version>
         <maven.compiler.source>11</maven.compiler.source>
@@ -244,13 +244,12 @@
             <artifactId>jersey-container-grizzly2-servlet</artifactId>
             <version>3.1.5</version>
         </dependency>
-
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <!-- httpclient, jersey-apache-client use Commons logging -->
+        <!-- Flyway 3.2, httpclient and spring use Commons logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
@@ -262,6 +261,32 @@
             <artifactId>jul-to-slf4j</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
+        <!-- HSQLDB use log4j -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+
+        <!-- SLF4J API -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- SLF4J Log4j Implementation -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
