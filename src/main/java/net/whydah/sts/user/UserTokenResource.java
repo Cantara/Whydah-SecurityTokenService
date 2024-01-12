@@ -119,8 +119,8 @@ public class UserTokenResource {
 		this.userAuthenticator = userAuthenticator;
 	}
 
-	@Inject
-	private AppConfig appConfig;
+//	@Inject
+	private AppConfig appConfig=new AppConfig();
 
 	@Path("/usertoken_template")
 	@GET

@@ -18,7 +18,7 @@ import java.net.URI;
 public class SecurityTokenServiceModule extends AbstractModule {
     private final static Logger log = LoggerFactory.getLogger(SecurityTokenServiceModule.class);
 
-    private final AppConfig appConfig;
+    public  final AppConfig appConfig;
     private final String applicationmode;
 
     public SecurityTokenServiceModule(AppConfig appConfig, String applicationmode) {

@@ -48,8 +48,8 @@ public class ApplicationResource {
 
 
     private final static Map<String, Instant> appAuthProcessingMap = new ConcurrentHashMap<>();
-    @Inject
-    private AppConfig appConfig;
+//    @Inject
+    private AppConfig appConfig=new AppConfig();
 
     @Inject
     private UserAuthenticator userAuthenticator;
