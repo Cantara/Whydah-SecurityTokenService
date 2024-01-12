@@ -1,8 +1,10 @@
 package net.whydah.sts;
 
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import net.whydah.sso.config.ApplicationMode;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -43,6 +45,7 @@ public class ServiceStarterTest {
     @Test
     public void getLegalRemark() {
         HttpGet request = new HttpGet(baseUri);
+        request.setHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
         CloseableHttpResponse response;
         try {
             response = restClient.execute(request);
