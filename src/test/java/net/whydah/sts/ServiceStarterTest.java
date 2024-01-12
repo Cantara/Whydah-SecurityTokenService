@@ -163,7 +163,7 @@ public class ServiceStarterTest {
 //        assertTrue(responseMsg.contains("SecurityTokenService") || responseMsg.contains("127.0.0.1"));
         WebTarget webResource = client.target(baseUri).path("/health");
         Invocation.Builder invocationBuilder =
-                webResource.request(MediaType.APPLICATION_XML);
+                webResource.request(MediaType.APPLICATION_JSON);
         Response response = invocationBuilder.get();
         String responseMsg = response.readEntity(String.class);
         assertTrue(responseMsg.contains("SecurityTokenService") || responseMsg.contains("127.0.0.1"));
