@@ -177,6 +177,13 @@
             <artifactId>jersey-client</artifactId>
             <version>${jersey-version}</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.glassfish.jaxb/jaxb-runtime -->
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>4.0.2</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/com.hazelcast/hazelcast-all -->
         <dependency>
             <groupId>com.hazelcast</groupId>

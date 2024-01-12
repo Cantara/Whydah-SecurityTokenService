@@ -129,13 +129,13 @@ public class ServiceStarter {
         try {
             webappPort = Integer.valueOf(appConfig.getProperty("service.port"));
         } catch (Exception e) {
-            webappPort = 9998;
+            webappPort = 9990;
         }
         ResourceConfig config = new ResourceConfig().packages("net.whydah");
         // Create and start a grizzly http server
         //HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
 
-        String BASE_URI= "http://localhost:"+webappPort+"/"+CONTEXTPATH+"/";
+        String BASE_URI= "http://localhost:"+webappPort+""+CONTEXTPATH+"/";
         httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
         //new HttpServer();
 
