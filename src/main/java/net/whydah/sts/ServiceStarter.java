@@ -2,6 +2,7 @@ package net.whydah.sts;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.servlet.GuiceFilter;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.http.HttpServletMapping;
@@ -99,15 +100,15 @@ public class ServiceStarter {
 
         //final WebappContext context = new WebappContext("grizzly", CONTEXTPATH);
         //GuiceContainer container = new GuiceContainer(injector);
-        final WebappContext context2 = new WebappContext("WebappContext", CONTEXTPATH);
+        final WebappContext context2 = new WebappContext("grizzly", CONTEXTPATH);
+        //context2.addServlet("ServletContainer", new SecurityTokenServiceModule(appConfig, appMode));
         final ServletRegistration servletRegistration = context2.addServlet("ServletContainer", CONTEXTPATH);
-        //final ServletRegistration servletRegistration = container.
-        //context2.addServlet("ServletContainer", (Servlet) container.getServletContext().getServlets().nextElement());
-//                .addServlet("ServletContainer", container);
+        //final ServletRegistration servletRegistration = container.addServlet("ServletContainer", container);
+
         servletRegistration.addMapping("/*");
         servletRegistration.setInitParameter("com.sun.jersey.config.property.packages", "net.whydah");
         servletRegistration.setInitParameter("com.sun.jersey.api.json.POJOMappingFeature", "true");
-        //context2.addFilter("guiceFilter", "GuiceFilter.class");
+        context2.addFilter("guiceFilter", "GuiceFilter.class");
         //.addFilter("guiceFilter", GuiceFilter.class);
 
         //final WebappContext context = new WebappContext("grizzly", CONTEXTPATH);
