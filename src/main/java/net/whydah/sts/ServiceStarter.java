@@ -127,7 +127,9 @@ public class ServiceStarter {
         
 
         try {
+            SecurityTokenServiceModule securityTokenServiceModule=  new SecurityTokenServiceModule(appConfig, appMode);
             webappPort = Integer.valueOf(appConfig.getProperty("service.port"));
+
         } catch (Exception e) {
             webappPort = 9990;
         }
