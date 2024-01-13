@@ -526,6 +526,9 @@ public class ApplicationResource {
             }
 
 
+            if (appConfig==null){
+                appConfig=new AppConfig();
+            }
             String expectedAppSecret = appConfig.getProperty(applicationCredential.getApplicationID());
             log.trace("verifyApplicationCredentialAgainstLocalAndUAS_UIB: appid={}, appSecret={}, expectedAppSecret={}", applicationCredential.getApplicationID(), applicationCredential.getApplicationSecret(), expectedAppSecret);
 

@@ -261,17 +261,21 @@ public class AsyncHealthService implements Runnable {
         changed |= updateField(health, "AuthenticatedApplicationRepositoryMapSize", AuthenticatedApplicationTokenRepository::getMapSize);
         changed |= updateField(health, "ConfiguredApplications", () -> applicationMapSize);
         changed |= updateField(health, "ThreatSignalRingbufferSize", () -> threatSignalRingbufferRef.get().size());
-        if (isExtendedInfoEnabled) {
-            changed |= updateField(health, "AuthenticatedApplicationKeyMapSize", AuthenticatedApplicationTokenRepository::getKeyMapSize);
-            changed |= updateField(health, "ActiveApplications", AuthenticatedApplicationTokenRepository::getActiveApplications);
-            checkForNewTheatSignalsAndUpdateObfuscatedList();
-            if (nextThreatSignalSequenceToRead != nextThreatSignalSequenceInCurrentHealth) {
-                // nextThreatSignalSequenceToRead has changed from the last time we checked,
-                // this means there are new items in the obfuscatedThreatSignalList
-                ArrayNode threatSignalsHealthValue = mapper.convertValue(obfuscatedThreatSignalList, ArrayNode.class);
-                changed |= updateField(health, "threat_signals", () -> threatSignalsHealthValue);
-                nextThreatSignalSequenceInCurrentHealth = nextThreatSignalSequenceToRead;
+        try {
+            if (isExtendedInfoEnabled) {
+                changed |= updateField(health, "AuthenticatedApplicationKeyMapSize", AuthenticatedApplicationTokenRepository::getKeyMapSize);
+                changed |= updateField(health, "ActiveApplications", AuthenticatedApplicationTokenRepository::getActiveApplications);
+                checkForNewTheatSignalsAndUpdateObfuscatedList();
+                if (nextThreatSignalSequenceToRead != nextThreatSignalSequenceInCurrentHealth) {
+                    // nextThreatSignalSequenceToRead has changed from the last time we checked,
+                    // this means there are new items in the obfuscatedThreatSignalList
+                    ArrayNode threatSignalsHealthValue = mapper.convertValue(obfuscatedThreatSignalList, ArrayNode.class);
+                    changed |= updateField(health, "threat_signals", () -> threatSignalsHealthValue);
+                    nextThreatSignalSequenceInCurrentHealth = nextThreatSignalSequenceToRead;
+                }
             }
+        } catch (Exception e){
+            log.warn("Issues:",e);
         }
         long end = System.currentTimeMillis();
         healthComputeTimeMs.set(end - start);
