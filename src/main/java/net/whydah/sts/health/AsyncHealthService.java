@@ -158,19 +158,27 @@ public class AsyncHealthService implements Runnable {
             //hazelcastConfig.getGroupConfig().setName("STS_HAZELCAST");
             hazelcastConfig.setProperty("hazelcast.logging.type", "slf4j");
 
-            HazelcastInstance hazelcastInstance;
+            HazelcastInstance hazelcastInstance=null;
             try {
                 hazelcastInstance = Hazelcast.newHazelcastInstance(hazelcastConfig);
             } catch (Exception ex) {
-                hazelcastInstance = Hazelcast.newHazelcastInstance();
+                log.error("Trouble with hz initialization",ex);
+                try {
+                    hazelcastInstance = Hazelcast.newHazelcastInstance();
+
+                } catch (Exception exx){
+                    log.error("Trouble-exx with hz initialization",exx);
+
+                }
             }
             log.info("Connecting to threatSignalRingbuffer {}", appConfig.getProperty("gridprefix") + "threatSignalRingbuffer");
-            Ringbuffer<String> threatSignalRingbuffer = hazelcastInstance.getRingbuffer(appConfig.getProperty("gridprefix") + "threatSignalRingbuffer");
-            threatSignalRingbufferRef.set(threatSignalRingbuffer);
-            nextThreatSignalSequenceToRead = threatSignalRingbuffer.headSequence();
-            nextThreatSignalSequenceInCurrentHealth = nextThreatSignalSequenceToRead;
-            log.info("Loaded threatSignalRingbuffer size={}, capacity={}", threatSignalRingbuffer.size(), threatSignalRingbuffer.capacity());
-
+            if (hazelcastInstance!=null) {
+                Ringbuffer<String> threatSignalRingbuffer = hazelcastInstance.getRingbuffer(appConfig.getProperty("gridprefix") + "threatSignalRingbuffer");
+                threatSignalRingbufferRef.set(threatSignalRingbuffer);
+                nextThreatSignalSequenceToRead = threatSignalRingbuffer.headSequence();
+                nextThreatSignalSequenceInCurrentHealth = nextThreatSignalSequenceToRead;
+                log.info("Loaded threatSignalRingbuffer size={}, capacity={}", threatSignalRingbuffer.size(), threatSignalRingbuffer.capacity());
+            }
             // Initializing
             log.info("Health initializing first full health...");
             try {
