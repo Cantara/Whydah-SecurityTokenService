@@ -19,6 +19,9 @@ import org.glassfish.grizzly.strategies.WorkerThreadIOStrategy;
 import org.glassfish.grizzly.threadpool.ThreadPoolConfig;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.model.Resource;
+import org.glassfish.jersey.server.mvc.freemarker.FreemarkerMvcFeature;
+import org.glassfish.jersey.servlet.ServletProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -133,7 +136,16 @@ public class ServiceStarter {
         } catch (Exception e) {
             webappPort = 9990;
         }
-        ResourceConfig config = new ResourceConfig().packages("net.whydah");
+        //ResourceConfig config = new ResourceConfig().packages("net.whydah");
+       
+        final ResourceConfig config = new ResourceConfig()
+        	    .packages("net.whydah")
+        	    .register(FreemarkerMvcFeature.class) // register FreemarkerMVC
+        	    .property(FreemarkerMvcFeature.TEMPLATE_BASE_PATH, "templates")
+        	    .property(ServletProperties.FILTER_FORWARD_ON_404, true);
+
+        
+        //register(FreemarkerMvcFeature.class);;
         // Create and start a grizzly http server
         //HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
 
