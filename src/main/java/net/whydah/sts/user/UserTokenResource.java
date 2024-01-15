@@ -108,16 +108,17 @@ public class UserTokenResource {
 	}
 
 
+	@Inject
 	private UserAuthenticator userAuthenticator;
 
 	@Context
 	UriInfo uriInfo;
 
 
-	@Inject
-	public UserTokenResource(UserAuthenticator userAuthenticator) {
-		this.userAuthenticator = userAuthenticator;
-	}
+//	@Inject
+//	public UserTokenResource(UserAuthenticator userAuthenticator) {
+//		this.userAuthenticator = userAuthenticator;
+//	}
 
 //	@Inject
 	private AppConfig appConfig=new AppConfig();
