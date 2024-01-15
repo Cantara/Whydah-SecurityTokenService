@@ -60,7 +60,7 @@ public class UserAuthenticatorImplTest {
                             .withHeader("Content-Type", "application/xml")
                             .withBody("<xml>Error: logonFailed, this is a test</xml>")));
 
-            UserAuthenticator userAuthenticator = new UserAuthenticatorImpl(URI.create("http://localhost:" + port + "/"), null, null);
+            UserAuthenticator userAuthenticator = new UserAuthenticatorImpl("http://localhost:" + port + "/", null);
             String appTokenXml = ApplicationTokenMapper.toXML(applicationToken);
             UserToken userToken = userAuthenticator.logonUser(applicationToken.getApplicationTokenId(), appTokenXml, userCredentialXml);
             assertNotNull(userToken);

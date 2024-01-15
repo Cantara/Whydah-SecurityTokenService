@@ -3,6 +3,8 @@ package net.whydah.sts.user.authentication;
 import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserToken;
+
+import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -20,6 +22,7 @@ import java.io.StringReader;
  * This class is responsible for handling test and development of this module as a standalone instance, shortcutting user authentication
  */
 
+@Service
 public class DummyUserAuthenticator implements UserAuthenticator {
     private static final Logger log = LoggerFactory.getLogger(DummyUserAuthenticator.class);
     private final static DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

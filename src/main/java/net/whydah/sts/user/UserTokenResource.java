@@ -1,11 +1,12 @@
 package net.whydah.sts.user;
 
 import com.fasterxml.jackson.databind.util.LRUMap;
-import com.google.inject.Inject;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
@@ -38,6 +39,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
 
 @Path("/user")
 public class UserTokenResource {
@@ -115,19 +117,16 @@ public class UserTokenResource {
 	UriInfo uriInfo;
 
 
-//	@Inject
-//	public UserTokenResource(UserAuthenticator userAuthenticator) {
-//		this.userAuthenticator = userAuthenticator;
-//	}
-
-//	@Inject
-	private AppConfig appConfig=new AppConfig();
+	private AppConfig appConfig = new AppConfig();
 
 	@Path("/usertoken_template")
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
-	public Response getUserTokenTemplate() {
-		return Response.ok(new Viewable("/usertoken.ftl", new UserToken())).build();
+	public Response getUserTokenTemplate() throws Exception {
+		
+		Map<String, Object> model = new HashMap();
+		model.put("it", new UserToken());
+		return Response.ok(new Viewable("/usertoken.ftl", model)).build();
 	}
 
 	/**

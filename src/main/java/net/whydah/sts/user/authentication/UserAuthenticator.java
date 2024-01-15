@@ -1,7 +1,10 @@
 package net.whydah.sts.user.authentication;
 
+import org.jvnet.hk2.annotations.Contract;
+
 import net.whydah.sso.user.types.UserToken;
 
+@Contract
 public interface UserAuthenticator {
     UserToken logonUser(String applicationTokenId, String appTokenXml, String userCredentialXml);
 

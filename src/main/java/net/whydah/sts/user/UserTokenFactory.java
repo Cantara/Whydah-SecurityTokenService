@@ -1,8 +1,9 @@
 package net.whydah.sts.user;
 
-import com.google.inject.Singleton;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+
+import jakarta.inject.Singleton;
 import net.minidev.json.JSONArray;
 import net.whydah.sso.application.types.Application;
 import net.whydah.sso.commands.extensions.crmapi.CommandGetCRMCustomer;

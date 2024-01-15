@@ -139,6 +139,14 @@
             <artifactId>jersey-media-multipart</artifactId>
             <version>${jersey-version}</version>
         </dependency>
+        
+        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
+		<dependency>
+		    <groupId>org.glassfish.jersey.core</groupId>
+		    <artifactId>jersey-common</artifactId>
+		    <version>3.1.5</version>
+		</dependency>
+		        
 
         <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-jaxb -->
         <dependency>
@@ -190,45 +198,17 @@
             <artifactId>jersey-mvc</artifactId>
             <version>${jersey-version}</version>
         </dependency>
-        <!-- Thanks for using https://jar-download.com -->
+     
 
-        <dependency>
-            <groupId>org.glassfish.jersey.core</groupId>
-            <artifactId>jersey-client</artifactId>
-            <version>${jersey-version}</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.glassfish.jaxb/jaxb-runtime -->
-        <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <version>4.0.2</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/com.hazelcast/hazelcast -->
-        <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast</artifactId>
-            <version>5.3.6</version>
-        </dependency>
-        <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-aws</artifactId>
-            <version>3.4</version>
-        </dependency>
+		<!-- https://mvnrepository.com/artifact/com.hazelcast/hazelcast-all -->
+		<dependency>
+		    <groupId>com.hazelcast</groupId>
+		    <artifactId>hazelcast-all</artifactId>
+		    <version>4.2.8</version>
+		</dependency>
 
 
-        <!-- guice -->
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>${guice-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.inject.extensions</groupId>
-            <artifactId>guice-servlet</artifactId>
-            <version>${guice-version}</version>
-        </dependency>
-
+       
 
         <dependency>
             <groupId>org.freemarker</groupId>
@@ -240,14 +220,20 @@
         <dependency>
             <groupId>org.glassfish.jersey.ext</groupId>
             <artifactId>jersey-mvc-freemarker</artifactId>
-            <version>3.1.5</version>
+            <version>${jersey-version}</version>
         </dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-moxy -->
+		<dependency>
+		    <groupId>org.glassfish.jersey.media</groupId>
+		    <artifactId>jersey-media-moxy</artifactId>
+		    <version>${jersey-version}</version>
+		</dependency>
 
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-grizzly2-servlet</artifactId>
-            <version>3.1.5</version>
+            <version>${jersey-version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

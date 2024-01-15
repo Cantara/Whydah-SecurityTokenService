@@ -2,7 +2,8 @@ package net.whydah.sts.application;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
+
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -48,8 +49,8 @@ public class ApplicationResource {
 
 
     private final static Map<String, Instant> appAuthProcessingMap = new ConcurrentHashMap<>();
-//    @Inject
-    private AppConfig appConfig=new AppConfig();
+    
+    private AppConfig appConfig = new AppConfig();
 
     @Inject
     private UserAuthenticator userAuthenticator;

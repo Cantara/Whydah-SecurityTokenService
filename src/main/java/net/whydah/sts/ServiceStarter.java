@@ -1,15 +1,13 @@
 package net.whydah.sts;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.servlet.GuiceFilter;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletRegistration;
-import jakarta.servlet.http.HttpServletMapping;
-import net.whydah.sso.config.ApplicationMode;
-import net.whydah.sts.config.AppConfig;
-import net.whydah.sts.config.SecurityTokenServiceModule;
-import net.whydah.sts.user.AuthenticatedUserTokenRepository;
+import java.io.IOException;
+import java.net.URI;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.SecureRandom;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.grizzly.http.server.NetworkListener;
 import org.glassfish.grizzly.nio.transport.TCPNIOTransport;
@@ -18,8 +16,8 @@ import org.glassfish.grizzly.servlet.WebappContext;
 import org.glassfish.grizzly.strategies.WorkerThreadIOStrategy;
 import org.glassfish.grizzly.threadpool.ThreadPoolConfig;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+import org.glassfish.jersey.moxy.xml.MoxyXmlFeature;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.mvc.freemarker.FreemarkerMvcFeature;
 import org.glassfish.jersey.servlet.ServletProperties;
 import org.slf4j.Logger;
@@ -27,13 +25,12 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.valuereporter.client.activity.ObservedActivityDistributer;
 
-import java.io.IOException;
-import java.net.URI;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.SecureRandom;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.http.HttpServletMapping;
+import net.whydah.sso.config.ApplicationMode;
+import net.whydah.sts.config.AppBinder;
+import net.whydah.sts.config.AppConfig;
+import net.whydah.sts.user.AuthenticatedUserTokenRepository;
 
 public class ServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(ServiceStarter.class);
@@ -130,22 +127,24 @@ public class ServiceStarter {
         
 
         try {
-            SecurityTokenServiceModule securityTokenServiceModule=  new SecurityTokenServiceModule(appConfig, appMode);
+           // SecurityTokenServiceModule securityTokenServiceModule=  new SecurityTokenServiceModule(appConfig, appMode);
             webappPort = Integer.valueOf(appConfig.getProperty("service.port"));
 
         } catch (Exception e) {
             webappPort = 9990;
         }
         //ResourceConfig config = new ResourceConfig().packages("net.whydah");
-       
-        final ResourceConfig config = new ResourceConfig()
+        //HK2toGuiceModule hk2Module = new HK2toGuiceModule(injector);
+      
+        ResourceConfig config = new ResourceConfig()
         	    .packages("net.whydah")
+        	    .register(MoxyXmlFeature.class)
         	    .register(FreemarkerMvcFeature.class) // register FreemarkerMVC
         	    .property(FreemarkerMvcFeature.TEMPLATE_BASE_PATH, "templates")
         	    .property(ServletProperties.FILTER_FORWARD_ON_404, true)
-		        .register(new SecurityTokenServiceModule(appConfig, appMode));
-
-        
+        	    .register(new AppBinder(appMode))
+        	    ;
+      
         //register(FreemarkerMvcFeature.class);;
         // Create and start a grizzly http server
         //HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
@@ -154,7 +153,7 @@ public class ServiceStarter {
         String BASE_URI= "http://localhost:"+webappPort+""+CONTEXTPATH+"/";
         httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
         //new HttpServer();
-
+        
         //ServerConfiguration serverconfig = httpServer.getServerConfiguration();
         //serverconfig.addHttpHandler(handler, "/");
         NetworkListener listener = new NetworkListener("grizzly server", NetworkListener.DEFAULT_NETWORK_HOST, webappPort);

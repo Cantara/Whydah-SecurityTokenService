@@ -1,7 +1,6 @@
 package net.whydah.sts.user.authentication;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
+
 import net.whydah.sso.application.mappers.ApplicationTokenMapper;
 import net.whydah.sso.application.types.ApplicationToken;
 import net.whydah.sso.commands.adminapi.user.CommandGetUserAggregate;
@@ -21,6 +20,8 @@ import net.whydah.sts.user.authentication.commands.CommandVerifyUserCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.inject.Inject;
+
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -30,13 +31,19 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 
 
     private URI useradminservice;
-    private final AppConfig appConfig;
+    private final AppConfig appConfig = new AppConfig();
 
 
     @Inject
-    public UserAuthenticatorImpl(@Named("useradminservice") URI useradminservice, UserTokenFactory userTokenFactory, AppConfig appConfig) {
-        this.useradminservice = useradminservice;
-        this.appConfig = appConfig;
+    public UserAuthenticatorImpl() {
+    	String useradminservice_prop = appConfig.getProperty("useradminservice");
+    	this.useradminservice = URI.create(useradminservice_prop);
+        
+    }
+    
+    public UserAuthenticatorImpl(String uasAdminUrl, AppConfig appConfig) {
+    	this.useradminservice = URI.create(uasAdminUrl);
+    	
     }
 
     @Override
