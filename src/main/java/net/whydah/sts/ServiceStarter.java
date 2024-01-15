@@ -84,7 +84,7 @@ public class ServiceStarter {
         String appMode = ApplicationMode.getApplicationMode();
         AppConfig appConfig = new AppConfig();
 
-        Injector injector = Guice.createInjector(new SecurityTokenServiceModule(appConfig, appMode));
+        //Injector injector = Guice.createInjector(new SecurityTokenServiceModule(appConfig, appMode));
 
         log.info("Starting SecurityTokenService... version:{}", IMPLEMENTATION_VERSION);
 
@@ -142,7 +142,8 @@ public class ServiceStarter {
         	    .packages("net.whydah")
         	    .register(FreemarkerMvcFeature.class) // register FreemarkerMVC
         	    .property(FreemarkerMvcFeature.TEMPLATE_BASE_PATH, "templates")
-        	    .property(ServletProperties.FILTER_FORWARD_ON_404, true);
+        	    .property(ServletProperties.FILTER_FORWARD_ON_404, true)
+		        .register(new SecurityTokenServiceModule(appConfig, appMode));
 
         
         //register(FreemarkerMvcFeature.class);;
