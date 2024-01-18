@@ -52,13 +52,27 @@ public class ServiceStarter {
         setupPublicKey();
         ServiceStarter serviceStarter = new ServiceStarter();
         serviceStarter.startServer();
+       
+        
+     // add jvm shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        	try {
+        		System.out.println("Shutting down the application...");
+
+        		 serviceStarter.stop();
+        		
+        		System.out.println("Done, exit.");
+        	} catch (Exception e) {
+        		 log.error("Running server killed");
+        	}
+        }));
+
         try {
             // wait forever...
             Thread.currentThread().join();
         } catch (InterruptedException ie) {
             log.error("Running server killed by interrupt");
         }
-        serviceStarter.stop();
     }
 
     private static void setupPublicKey() {
@@ -206,7 +220,7 @@ public class ServiceStarter {
 
     public void stop() {
         if (httpServer != null) {
-            httpServer.stop();//.stop();
+            httpServer.shutdownNow();
         }
     }
 }
