@@ -10,6 +10,7 @@ import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sts.user.authentication.DummyUserAuthenticator;
 import net.whydah.sts.user.authentication.UserAuthenticator;
 import net.whydah.sts.user.authentication.UserAuthenticatorImpl;
+import org.glassfish.hk2.api.Immediate;
 
 public class AppBinder extends AbstractBinder {
 	
@@ -31,6 +32,7 @@ public class AppBinder extends AbstractBinder {
             bind(DummyUserAuthenticator.class).to(UserAuthenticator.class);
         } else {
         	bind(UserAuthenticatorImpl.class).to(UserAuthenticator.class);
+        	//bind(UserAuthenticatorImpl.class).to(UserAuthenticator.class);
         }
     	
     	

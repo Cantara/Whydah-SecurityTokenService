@@ -28,9 +28,12 @@ import org.valuereporter.client.activity.ObservedActivityDistributer;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.http.HttpServletMapping;
 import net.whydah.sso.config.ApplicationMode;
+import net.whydah.sts.application.ApplicationResource;
 import net.whydah.sts.config.AppBinder;
 import net.whydah.sts.config.AppConfig;
+import net.whydah.sts.health.HealthResource;
 import net.whydah.sts.user.AuthenticatedUserTokenRepository;
+import net.whydah.sts.user.UserTokenResource;
 
 public class ServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(ServiceStarter.class);
@@ -156,6 +159,9 @@ public class ServiceStarter {
         	    .register(FreemarkerMvcFeature.class) // register FreemarkerMVC
         	    .property(FreemarkerMvcFeature.TEMPLATE_BASE_PATH, "templates")
         	    .property(ServletProperties.FILTER_FORWARD_ON_404, true)
+        	    .register(new UserTokenResource())
+        	    .register(new ApplicationResource())
+        	    .register(new HealthResource())
         	    .register(new AppBinder(appMode))
         	    ;
       
