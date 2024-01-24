@@ -198,7 +198,7 @@ public class ServiceStarter {
         listener.setTransport(transport);
 
 
-        //httpServer.addListener(listener);
+        httpServer.addListener(listener);
 
 
         //context2.deploy(httpServer);
