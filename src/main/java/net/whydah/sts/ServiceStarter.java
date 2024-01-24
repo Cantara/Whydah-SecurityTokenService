@@ -121,15 +121,15 @@ public class ServiceStarter {
 
         //final WebappContext context = new WebappContext("grizzly", CONTEXTPATH);
         //GuiceContainer container = new GuiceContainer(injector);
-        final WebappContext context2 = new WebappContext("grizzly", CONTEXTPATH);
+        //final WebappContext context2 = new WebappContext("grizzly", CONTEXTPATH);
         //context2.addServlet("ServletContainer", new SecurityTokenServiceModule(appConfig, appMode));
-        final ServletRegistration servletRegistration = context2.addServlet("ServletContainer", CONTEXTPATH);
+        //final ServletRegistration servletRegistration = context2.addServlet("ServletContainer", CONTEXTPATH);
         //final ServletRegistration servletRegistration = container.addServlet("ServletContainer", container);
 
-        servletRegistration.addMapping("/*");
-        servletRegistration.setInitParameter("com.sun.jersey.config.property.packages", "net.whydah");
-        servletRegistration.setInitParameter("com.sun.jersey.api.json.POJOMappingFeature", "true");
-        context2.addFilter("guiceFilter", "GuiceFilter.class");
+        //servletRegistration.addMapping("/*");
+        //servletRegistration.setInitParameter("com.sun.jersey.config.property.packages", "net.whydah");
+        //servletRegistration.setInitParameter("com.sun.jersey.api.json.POJOMappingFeature", "true");
+        //context2.addFilter("guiceFilter", "GuiceFilter.class");
         //.addFilter("guiceFilter", GuiceFilter.class);
 
         //final WebappContext context = new WebappContext("grizzly", CONTEXTPATH);
@@ -169,8 +169,8 @@ public class ServiceStarter {
         // Create and start a grizzly http server
         //HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
 
-        System.out.println("http://localhost:"+webappPort+""+CONTEXTPATH+"/");
-        String BASE_URI= "http://localhost:"+webappPort+""+CONTEXTPATH+"/";
+        System.out.println("http://0.0.0.0:"+webappPort+""+CONTEXTPATH+"/");
+        String BASE_URI= "http://0.0.0.0:"+webappPort+""+CONTEXTPATH+"/";
         httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), config);
         //new HttpServer();
         
