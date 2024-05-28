@@ -119,4 +119,13 @@ public class DummyUserAuthenticator implements UserAuthenticator {
 		return null;
 	}
 
+	@Override
+	public UserToken logonUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml,
+			String adminUserTokenIdparam, String cellPhone, String secret) {
+		if (ApplicationMode.getApplicationMode().equalsIgnoreCase(ApplicationMode.DEV)) {
+			return new UserToken();
+		}
+		return null;
+	}
+
 }

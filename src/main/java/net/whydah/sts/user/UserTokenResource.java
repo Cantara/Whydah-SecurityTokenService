@@ -64,12 +64,14 @@ public class UserTokenResource {
 	private static final String SMS_GW_QUERY_PARAM;
 
 	public static final String GRIDPREFIX = "gridprefix";
+	
+	public static final String STS_SSOLWA_SHARED_SECRECT;
 
 
 	static {
 
 		AppConfig appConfig = new AppConfig();
-
+		STS_SSOLWA_SHARED_SECRECT = appConfig.getProperty("sso_lwa_shared_secrect");
 		// Property-overwrite of SSL verification to support weak ssl certificates
 		if ("disabled".equalsIgnoreCase(appConfig.getProperty("sslverification"))) {
 			SSLTool.disableCertificateValidation();
@@ -101,7 +103,7 @@ public class UserTokenResource {
 		log.info("Connectiong to map {}", appConfig.getProperty(GRIDPREFIX) + "userticket_map");
 		//applicationtokenidmap = hazelcastInstance.getMap(appConfig.getProperty(GRIDPREFIX) + "applicationtokenid_map");
 		//log.info("Connectiong to map {}", appConfig.getProperty(GRIDPREFIX) + "applicationtokenid_map");
-
+		
 		SMS_GW_SERVICE_URL = appConfig.getProperty("smsgw.serviceurl");  //URL https://smsgw.somewhere/../sendMessages/
 		SMS_GW_SERVICE_ACCOUNT = appConfig.getProperty("smsgw.serviceaccount");  //serviceAccount
 		SMS_GW_USERNAME = appConfig.getProperty("smsgw.username");  //smsserviceusername
@@ -2059,6 +2061,53 @@ public class UserTokenResource {
 
 		try {
 			UserToken userToken = userAuthenticator.logonWithTrustedUser(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, clientid);
+			userticketmap.put(userticket, userToken.getUserTokenId());
+			log.debug("getUserTokenByTrustedThirdpartyClientAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
+			return createUserTokenResponse(applicationtokenid, userToken);
+
+		} catch (AuthenticationFailedException ae) {
+			log.warn("getUserToken - User authentication failed");
+			//return Response.status(Response.Status.NOT_ACCEPTABLE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.USER_LOGIN_PIN_FAILED_6004.setDeveloperMessage(ae.getMessage());
+		}
+
+
+	}
+	
+	@Path("/{applicationtokenid}/{userticket}/get_usertoken_by_shared_secrect")
+	@POST
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_XML)
+	public Response getUserTokenByUsingASecrect(
+			@PathParam("applicationtokenid") String applicationtokenid,
+			@PathParam("userticket") String userticket,
+			@FormParam("adminUserTokenId") String adminUserTokenId,
+			@FormParam("apptoken") String appTokenXml,
+			@FormParam("phoneno") String phoneno,
+			@FormParam("secrect") String secrect
+			) throws AppException {
+
+		log.trace("getUserTokenByUsingASecrect() called with " + "applicationtokenid = [" + applicationtokenid + "], userticket = [" + userticket + "], appTokenXml = [" + appTokenXml + "], phoneno = [" + phoneno + "], secrect = [" + secrect + "]");
+
+		if (isEmpty(appTokenXml) || isEmpty(secrect) || isEmpty(phoneno)) {
+			//return Response.status(Response.Status.BAD_REQUEST).entity("Missing required parameters").build();
+			throw AppExceptionCode.MISC_MISSING_PARAMS_9998;
+		}
+
+		if (ApplicationMode.getApplicationMode().equals(ApplicationMode.DEV)) {
+			return DevModeHelper.return_DEV_MODE_ExampleUserToken(1);
+		}
+
+		// Verify calling application
+		if (!UserTokenFactory.verifyApplicationToken(applicationtokenid, appTokenXml)) {
+			log.warn("getUserTokenByUserTicket - attempt to access from invalid application. applicationtokenid={}", applicationtokenid);
+			//return Response.status(Response.Status.FORBIDDEN).entity(ILLEGAL_APPLICATION_FOR_THIS_SERVICE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.APP_ILLEGAL_7000;
+		}
+		
+		
+		try {
+			UserToken userToken = userAuthenticator.logonUserUsingSharedSTSSecret(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, secrect);
 			userticketmap.put(userticket, userToken.getUserTokenId());
 			log.debug("getUserTokenByTrustedThirdpartyClientAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
 			return createUserTokenResponse(applicationtokenid, userToken);

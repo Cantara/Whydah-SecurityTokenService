@@ -19,4 +19,6 @@ public interface UserAuthenticator {
     UserToken logonPinUserForTrustedUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String clientId, String pin);
 
     UserToken logonWithTrustedUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String clientid);
+    
+    UserToken logonUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String secret);
 }

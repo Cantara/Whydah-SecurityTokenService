@@ -272,5 +272,36 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
         }
 	}
 
+	@Override
+	public UserToken logonUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml, String adminUserTokenId,
+			String cellPhone, String secret) {
+		log.info("logonUserUsingSharedSTSSecret() called with " + "applicationtokenid = [" + applicationtokenid + "], appTokenXml = [" + appTokenXml + "], cellPhone = [" + cellPhone + "], secrect = [" + secret + "]");
+        if (appConfig.getProperty("ssolwa_sts_shared_secrect").equals(secret)) {
+            String usersQuery = cellPhone;
+            
+            String usersJson = new CommandListUsers(useradminservice, applicationtokenid, adminUserTokenId, usersQuery).execute();
+            log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+            UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
+            if (userTokenIdentity != null) {
+                log.info("Found matching UserIdentity {}", userTokenIdentity);
+
+                String userAggregateJson = new CommandGetUserAggregate(useradminservice, applicationtokenid, adminUserTokenId, userTokenIdentity.getUid()).execute();
+
+                UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
+                userToken.setSecurityLevel("2");  // UserIdentity as source = securitylevel=0
+                userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
+
+                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin");
+
+            } else {
+                log.error("Unable to find a user matching the given phonenumber.");
+                throw new AuthenticationFailedException("Unable to find a user matching the given phonenumber.");
+            }
+        } else {
+            log.warn("logonUserUsingSharedSTSSecret, illegal attempted");
+            throw new AuthenticationFailedException("Pin authentication failed. Status code ");
+        }
+	}
+
 
 }
