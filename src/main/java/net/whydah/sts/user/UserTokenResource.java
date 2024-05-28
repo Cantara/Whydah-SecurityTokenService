@@ -908,6 +908,8 @@ public class UserTokenResource {
 
 		try {
 			UserToken userToken = userAuthenticator.logonPinUser(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, pin);
+			userticketmap.put(userticket, userToken.getUserTokenId());
+			log.debug("getUserTokenByPinAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
 			return createUserTokenResponse(applicationtokenid, userToken);
 
 		} catch (AuthenticationFailedException ae) {
@@ -1901,6 +1903,165 @@ public class UserTokenResource {
 				throw AppExceptionCode.USER_AUTHENTICATION_FAILED_6000;
 			}
 
+
+		} catch (AuthenticationFailedException ae) {
+			log.warn("getUserToken - User authentication failed");
+			//return Response.status(Response.Status.NOT_ACCEPTABLE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.USER_LOGIN_PIN_FAILED_6004.setDeveloperMessage(ae.getMessage());
+		}
+
+
+	}
+	
+//	  This solves the problem authenticating an existing user against the 3rd party provider
+	   
+//  Client try to get (phonenumber + clientid) -----> Yes, trusted clientid found, return the usertoken
+//  		 |
+//  		 |
+//  		 No ----
+//  		     	1. STS generates a pin, register a pair (pin+clientid, phonenumber) to a map, then send pin
+//  				2. Client sends these params (verifying pin, phonenumber, clientid) to STS
+//  				3. STS check if the pair (pin+clientid, phonenumber) correct in the map -> register (phonenumber + 	clientid) -> send usertoken
+ 
+	
+	@Path("/{applicationtokenid}/send_sms_pin_for_trusted_client")
+	@POST
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_XML)
+	public Response sendgenerateAndSendSMSPinForTrustedClient(
+			@PathParam("applicationtokenid") String applicationtokenid,
+			@FormParam("phoneNo") String phoneNo, 
+			@FormParam("clientId") String clientId,
+			@FormParam("msg") String msg) throws AppException {
+		log.info("sendgenerateAndSendSMSPin: phoneNo:" + phoneNo);
+		
+		if (isEmpty(phoneNo)) {
+			log.warn("sendSMSPin: attempt to use service with emty parameters");
+			//return Response.status(Response.Status.NOT_ACCEPTABLE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.MISC_MISSING_PARAMS_9998;
+		}
+
+		if (!AuthenticatedApplicationTokenRepository.verifyApplicationTokenId(applicationtokenid)) {
+			log.warn("sendSMSPin - attempt to access from invalid application. applicationtokenid={}", applicationtokenid);
+			//return Response.status(Response.Status.FORBIDDEN).entity(ILLEGAL_APPLICATION_FOR_THIS_SERVICE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.APP_ILLEGAL_7000;
+		}
+		
+		String pinFound = ActivePinRepository.getPinSentIfAnyForTrustedClient(phoneNo);
+		String smsPin = generatePin();
+		boolean setPin = pinFound == null;
+		if(pinFound!=null) {
+			smsPin = pinFound;
+		}
+		if(msg==null || !msg.contains("{}")) {
+			msg = smsPin;
+		} else {
+			msg = msg.replace("{}", smsPin);
+		}
+		
+		String response = null;
+		try{
+			log.trace("CommandSendSMSToUser - ({}, {}, {}, {}, {}, {}, {})", SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, phoneNo, smsPin);
+			response = new CommandSendSMSToUser(SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, phoneNo, msg).execute();
+			log.trace("Answer from smsgw: " + response);
+		} catch(Exception ex){
+			ex.printStackTrace();
+		}
+		if(setPin) {
+			ActivePinRepository.setPinForTrustedClient(clientId, phoneNo, smsPin);
+		}
+		
+		
+		
+		return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+
+	}
+	
+	@Path("/{applicationtokenid}/{userticket}/get_usertoken_by_pin_and_logon_user_for_trusted_client")
+	@POST
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_XML)
+	public Response getUserTokenByDistributedPinAndLogonUserForTrustedClient(
+			@PathParam("userticket") String userticket,
+			@PathParam("applicationtokenid") String applicationtokenid,
+			@FormParam("adminUserTokenId") String adminUserTokenId,
+			@FormParam("apptoken") String appTokenXml,
+			@FormParam("phoneno") String phoneno,
+			@FormParam("pin") String pin,
+			@FormParam("clientid") String clientid
+			) throws AppException {
+
+		log.trace("getUserTokenByDistributedPinAndLogonUserForTrustedClient() called with " + "applicationtokenid = [" + applicationtokenid + "], userticket = [" + userticket + "], adminUserTokenId = [" + adminUserTokenId + "], phoneno = [" + phoneno + "], pin = [" + pin + "]");
+
+		if (isEmpty(appTokenXml) || isEmpty(pin) || isEmpty(phoneno)) {
+			//return Response.status(Response.Status.BAD_REQUEST).entity("Missing required parameters").build();
+			throw AppExceptionCode.MISC_MISSING_PARAMS_9998;
+		}
+
+		log.trace("getUserTokenByDistributedPinAndLogonUser: applicationtokenid={}, pin={}, appTokenXml={}", applicationtokenid, pin, appTokenXml);
+
+		if (ApplicationMode.getApplicationMode().equals(ApplicationMode.DEV)) {
+			return DevModeHelper.return_DEV_MODE_ExampleUserToken(1);
+		}
+
+		// Verify calling application
+		if (!UserTokenFactory.verifyApplicationToken(applicationtokenid, appTokenXml)) {
+			log.warn("getUserTokenByUserTicket - attempt to access from invalid application. applicationtokenid={}", applicationtokenid);
+			//return Response.status(Response.Status.FORBIDDEN).entity(ILLEGAL_APPLICATION_FOR_THIS_SERVICE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.APP_ILLEGAL_7000;
+		}
+
+		try {
+			UserToken userToken = userAuthenticator.logonPinUserForTrustedUser(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, clientid, pin);
+			userticketmap.put(userticket, userToken.getUserTokenId());
+			log.debug("getUserTokenByPinAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
+			return createUserTokenResponse(applicationtokenid, userToken);
+
+		} catch (AuthenticationFailedException ae) {
+			log.warn("getUserToken - User authentication failed");
+			//return Response.status(Response.Status.NOT_ACCEPTABLE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.USER_LOGIN_PIN_FAILED_6004.setDeveloperMessage(ae.getMessage());
+		}
+
+	}
+
+	@Path("/{applicationtokenid}/{userticket}/get_usertoken_by_trusted_client_and_logon_user")
+	@POST
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_XML)
+	public Response getUserTokenByTrustedThirdpartyClientAndLogonUser(
+			@PathParam("applicationtokenid") String applicationtokenid,
+			@PathParam("userticket") String userticket,
+			@FormParam("adminUserTokenId") String adminUserTokenId,
+			@FormParam("apptoken") String appTokenXml,
+			@FormParam("phoneno") String phoneno,
+			@FormParam("clientid") String clientid) throws AppException {
+
+		log.trace("getUserTokenByTrustedThirdpartyClientAndLogonUser() called with " + "applicationtokenid = [" + applicationtokenid + "], userticket = [" + userticket + "], appTokenXml = [" + appTokenXml + "], phoneno = [" + phoneno + "], clientid = [" + clientid + "]");
+
+		if (isEmpty(appTokenXml) || isEmpty(clientid) || isEmpty(phoneno)) {
+			//return Response.status(Response.Status.BAD_REQUEST).entity("Missing required parameters").build();
+			throw AppExceptionCode.MISC_MISSING_PARAMS_9998;
+		}
+
+		log.trace("getUserTokenByTrustedThirdpartyClientAndLogonUser: applicationtokenid={}, clientid={}, appTokenXml={}", applicationtokenid, clientid, appTokenXml);
+
+		if (ApplicationMode.getApplicationMode().equals(ApplicationMode.DEV)) {
+			return DevModeHelper.return_DEV_MODE_ExampleUserToken(1);
+		}
+
+		// Verify calling application
+		if (!UserTokenFactory.verifyApplicationToken(applicationtokenid, appTokenXml)) {
+			log.warn("getUserTokenByUserTicket - attempt to access from invalid application. applicationtokenid={}", applicationtokenid);
+			//return Response.status(Response.Status.FORBIDDEN).entity(ILLEGAL_APPLICATION_FOR_THIS_SERVICE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.APP_ILLEGAL_7000;
+		}
+
+		try {
+			UserToken userToken = userAuthenticator.logonWithTrustedUser(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, clientid);
+			userticketmap.put(userticket, userToken.getUserTokenId());
+			log.debug("getUserTokenByTrustedThirdpartyClientAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
+			return createUserTokenResponse(applicationtokenid, userToken);
 
 		} catch (AuthenticationFailedException ae) {
 			log.warn("getUserToken - User authentication failed");

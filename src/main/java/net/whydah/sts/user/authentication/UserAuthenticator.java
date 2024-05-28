@@ -11,7 +11,12 @@ public interface UserAuthenticator {
     UserToken logonPinUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String pin);
 
     UserToken createAndLogonUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String fbUserXml);
+    
     UserToken createAndLogonPinUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String cellPhone, String pin, String userJson);
 
     UserToken getRefreshedUserToken(String uid);
+    
+    UserToken logonPinUserForTrustedUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String clientId, String pin);
+
+    UserToken logonWithTrustedUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String clientid);
 }

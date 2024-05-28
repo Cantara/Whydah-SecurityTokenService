@@ -101,4 +101,22 @@ public class DummyUserAuthenticator implements UserAuthenticator {
         }
     }
 
+	@Override
+	public UserToken logonWithTrustedUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam,
+			String cellPhone, String clientid) {
+		if (ApplicationMode.getApplicationMode().equalsIgnoreCase(ApplicationMode.DEV)) {
+            return new UserToken();
+        }
+        throw new IllegalStateException();
+	}
+
+	@Override
+	public UserToken logonPinUserForTrustedUser(String applicationtokenid, String appTokenXml,
+			String adminUserTokenIdparam, String cellPhone, String clientId, String pin) {
+		if (ApplicationMode.getApplicationMode().equalsIgnoreCase(ApplicationMode.DEV)) {
+			return new UserToken();
+		}
+		return null;
+	}
+
 }
