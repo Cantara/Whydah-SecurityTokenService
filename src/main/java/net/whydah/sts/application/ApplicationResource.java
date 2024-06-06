@@ -506,7 +506,7 @@ public class ApplicationResource {
 
         try {
             if (!ApplicationCredential.isValid(appCredential)) {
-                log.trace("verifyApplicationCredentialAgainstLocalAndUAS_UIB - suspicious XML received, rejected.");
+                log.warn("verifyApplicationCredentialAgainstLocalAndUAS_UIB - suspicious XML received, rejected.");
                 return false;
             }
             if (ApplicationMode.getApplicationMode().equals(ApplicationMode.DEV)) {
@@ -531,7 +531,7 @@ public class ApplicationResource {
                 appConfig=new AppConfig();
             }
             String expectedAppSecret = appConfig.getProperty(applicationCredential.getApplicationID());
-            log.trace("verifyApplicationCredentialAgainstLocalAndUAS_UIB: appid={}, appSecret={}, expectedAppSecret={}", applicationCredential.getApplicationID(), applicationCredential.getApplicationSecret(), expectedAppSecret);
+            log.debug("verifyApplicationCredentialAgainstLocalAndUAS_UIB: appid={}, appSecret={}, expectedAppSecret={}", applicationCredential.getApplicationID(), applicationCredential.getApplicationSecret(), expectedAppSecret);
 
 
             // DDoS protection for application logon
