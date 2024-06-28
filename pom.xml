@@ -29,7 +29,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <java.version>11</java.version>
-
+		<unirest-java.version>3.14.5</unirest-java.version>
         <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>9.4.52.v20230823</jetty.plugin.version>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -322,7 +322,12 @@
             <version>2.27.2</version>
             <scope>test</scope>
         </dependency>
-
+		<!-- https://mvnrepository.com/artifact/com.konghq/unirest-java -->
+		<dependency>
+		    <groupId>com.konghq</groupId>
+		    <artifactId>unirest-java</artifactId>
+		    <version>${unirest-java.version}</version>
+		</dependency>
 	
     </dependencies>
 
