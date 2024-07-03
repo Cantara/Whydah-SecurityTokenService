@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import kong.unirest.Unirest;
 import net.whydah.sso.user.types.UserIdentity;
 import net.whydah.sso.user.types.UserToken;
-import net.whydah.sts.config.AppConfig;
 
 public class LogonTimeRepoter {
 	public static final Logger log = LoggerFactory.getLogger(LogonTimeRepoter.class);
@@ -24,10 +23,12 @@ public class LogonTimeRepoter {
 	
 	private Queue<UserIdentity> _queues = new LinkedList<>();
 
-	private String USS_URL = new AppConfig().getProperty("uss.url");
-	private String USS_ACCESSTOKEN = new AppConfig().getProperty("uss.accesstoken");
+	private String USS_URL = null;
+	private String USS_ACCESSTOKEN = null;
 			  
-	public LogonTimeRepoter() {
+	public LogonTimeRepoter(String uss_url, String uss_accesstoken) {
+		this.USS_URL = uss_url;
+		this.USS_ACCESSTOKEN = uss_accesstoken;
 		
 		logontime_update_scheduler = Executors.newScheduledThreadPool(1);
 		logontime_update_scheduler.scheduleWithFixedDelay(() -> {
@@ -44,7 +45,11 @@ public class LogonTimeRepoter {
 					}
 				}
 				if(list.size()>0) {
-					Unirest.post(USS_URL + "api/" + USS_ACCESSTOKEN + "/update").body(list).asEmpty();
+					String ok = Unirest.post(USS_URL.replaceFirst("/$", "") + "/api/" + USS_ACCESSTOKEN + "/update")
+							.contentType("application/json")
+							.accept("application/json")
+					.body(EntityUtils.object_mapToJsonString(list)).asString().getBody();
+					log.info("Updated status for {} users with result {} from USS", list.size(), ok);
 				}
 
 			} catch (Exception e) {

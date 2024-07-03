@@ -39,7 +39,8 @@ public class AuthenticatedUserTokenRepository {
 
     static {
         AppConfig appConfig = new AppConfig();
-        logonReporter = new LogonTimeRepoter();
+        logonReporter = new LogonTimeRepoter(appConfig.getProperty("uss.url"),
+        		appConfig.getProperty("uss.accesstoken"));
         
         String xmlFileName = System.getProperty("hazelcast.config");
         if (xmlFileName == null || xmlFileName.trim().isEmpty()) {
