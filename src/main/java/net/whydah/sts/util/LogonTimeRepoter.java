@@ -29,26 +29,34 @@ public class LogonTimeRepoter {
 	public LogonTimeRepoter(String uss_url, String uss_accesstoken) {
 		this.USS_URL = uss_url;
 		this.USS_ACCESSTOKEN = uss_accesstoken;
-		
+		log.info("logon reporter is starting with uss.url {}, uss.accesstoken {}", USS_URL, USS_ACCESSTOKEN);
 		logontime_update_scheduler = Executors.newScheduledThreadPool(1);
 		logontime_update_scheduler.scheduleWithFixedDelay(() -> {
 			try {
 
 				List<UserIdentity> list = new ArrayList<UserIdentity>();
+				
 				while (!_queues.isEmpty() && list.size() < BATCH_UPDATE_SIZE) {
 					try {
+						
 						UserIdentity n = _queues.poll();
 
-						list.add(n);
+						if(n!=null) {
+							list.add(n);	
+						}
 						
-					} catch (Exception ex) {						
+					} catch (Exception ex) {
+						log.error("unexpected error", ex);
 					}
 				}
 				if(list.size()>0) {
+					log.debug("Updating status for {} users", list.size());
+					
 					String ok = Unirest.post(USS_URL.replaceFirst("/$", "") + "/api/" + USS_ACCESSTOKEN + "/update")
 							.contentType("application/json")
 							.accept("application/json")
 					.body(EntityUtils.object_mapToJsonString(list)).asString().getBody();
+					
 					log.info("Updated status for {} users with result {} from USS", list.size(), ok);
 				}
 
@@ -72,7 +80,9 @@ public class LogonTimeRepoter {
 		u.setUid(user.getUid());
 		u.setUsername(user.getUserName());
 
-		_queues.offer(u);
+		if(_queues.offer(u)) {
+			log.debug("added userid {} to the log-on report list" , u.getUid());
+		}
 	}
 
 }

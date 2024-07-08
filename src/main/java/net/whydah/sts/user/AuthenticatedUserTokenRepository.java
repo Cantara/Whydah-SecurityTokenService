@@ -287,7 +287,7 @@ public class AuthenticatedUserTokenRepository {
 
         activeusertokensmap.put(userToken.getUserTokenId(), userToken);
         logonReporter.update(userToken);
-        log.info("Added userToken with id {}", userToken.getUserTokenId(), " content:" + userToken.toString());
+        log.info("Added userToken with id {}", userToken.getUserTokenId());
 
         if (userToken.getUserName() != null) {
             active_username_usertokenids_map.put(userToken.getUserName(), userToken.getUserTokenId());
