@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import net.whydah.sso.user.types.UserIdentity;
 import net.whydah.sso.user.types.UserToken;
@@ -52,12 +53,18 @@ public class LogonTimeRepoter {
 				if(list.size()>0) {
 					log.debug("Updating status for {} users", list.size());
 					
-					String ok = Unirest.post(USS_URL.replaceFirst("/$", "") + "/api/" + USS_ACCESSTOKEN + "/update")
+					HttpResponse<String> ok = Unirest.post(USS_URL.replaceFirst("/$", "") + "/api/" + USS_ACCESSTOKEN + "/update")
 							.contentType("application/json")
 							.accept("application/json")
-					.body(EntityUtils.object_mapToJsonString(list)).asString().getBody();
+					.body(EntityUtils.object_mapToJsonString(list))
+					.asString();
+					if(ok.getStatus() == 200) {
+						log.info("Updated status for {} users with result {} from USS", list.size(), ok);	
+					} else {
+						log.error("Updated status returned with status error = {}", ok.getStatus());
+					}
 					
-					log.info("Updated status for {} users with result {} from USS", list.size(), ok);
+					
 				}
 
 			} catch (Exception e) {
