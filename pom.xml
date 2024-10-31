@@ -20,7 +20,7 @@
         <service.name>Whydah-SecurityTokenService</service.name>
         <whydah.admin.sdk.version>2.22.0</whydah.admin.sdk.version>
         <org.valuereporter.agent>1.10.2</org.valuereporter.agent>
-        <jersey-version>3.1.8</jersey-version>
+        <jersey-version>3.1.9</jersey-version>
         <guice-version>5.1.0</guice-version>
         <slf4j.version>2.0.16</slf4j.version>
         <grizzy-version>4.0.2</grizzy-version>
@@ -371,8 +371,8 @@
                                 </filter>
                             </filters>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
