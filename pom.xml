@@ -213,7 +213,7 @@
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
-            <version>2.3.33</version>
+            <version>2.3.34</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.ext/jersey-mvc-freemarker -->
