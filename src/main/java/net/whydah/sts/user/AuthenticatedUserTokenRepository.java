@@ -17,7 +17,7 @@ import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.threat.ThreatResource;
 import net.whydah.sts.user.statistics.UserSessionObservedActivity;
 import net.whydah.sts.util.ApplicationModelHelper;
-import net.whydah.sts.util.LogonTimeRepoter;
+import net.whydah.sts.util.LogonTimeReporter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +35,11 @@ public class AuthenticatedUserTokenRepository {
     private final static HazelcastInstance hazelcastInstance;
     public final static long DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS;
     //public static final long DEFAULT_USER_SESSION_TIME_IN_SECONDS;
-    public final static LogonTimeRepoter logonReporter; 
+    public final static LogonTimeReporter logonReporter; 
 
     static {
         AppConfig appConfig = new AppConfig();
-        logonReporter = new LogonTimeRepoter(appConfig.getProperty("uss.url"),
+        logonReporter = new LogonTimeReporter(appConfig.getProperty("uss.url"),
         		appConfig.getProperty("uss.accesstoken"));
         
         String xmlFileName = System.getProperty("hazelcast.config");

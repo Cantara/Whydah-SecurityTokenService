@@ -16,8 +16,9 @@ import kong.unirest.Unirest;
 import net.whydah.sso.user.types.UserIdentity;
 import net.whydah.sso.user.types.UserToken;
 
-public class LogonTimeRepoter {
-	public static final Logger log = LoggerFactory.getLogger(LogonTimeRepoter.class);
+
+public class LogonTimeReporter {
+	public static final Logger log = LoggerFactory.getLogger(LogonTimeReporter.class);
 	ScheduledExecutorService logontime_update_scheduler;
 	int UPDATE_CHECK_INTERVAL_IN_SECONDS = 30;
 	int BATCH_UPDATE_SIZE = 10;
@@ -27,7 +28,7 @@ public class LogonTimeRepoter {
 	private String USS_URL = null;
 	private String USS_ACCESSTOKEN = null;
 			  
-	public LogonTimeRepoter(String uss_url, String uss_accesstoken) {
+	public LogonTimeReporter(String uss_url, String uss_accesstoken) {
 		this.USS_URL = uss_url;
 		this.USS_ACCESSTOKEN = uss_accesstoken;
 		log.info("logon reporter is starting with uss.url {}, uss.accesstoken {}", USS_URL, USS_ACCESSTOKEN);
@@ -35,6 +36,8 @@ public class LogonTimeRepoter {
 		logontime_update_scheduler.scheduleWithFixedDelay(() -> {
 			try {
 
+				log.info("logon reporter checking for updates, queue size: {}", _queues.size());
+				
 				List<UserIdentity> list = new ArrayList<UserIdentity>();
 				
 				while (!_queues.isEmpty() && list.size() < BATCH_UPDATE_SIZE) {
@@ -91,5 +94,4 @@ public class LogonTimeRepoter {
 			log.debug("added userid {} to the log-on report list" , u.getUid());
 		}
 	}
-
 }
