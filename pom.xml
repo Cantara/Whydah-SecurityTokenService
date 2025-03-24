@@ -22,7 +22,7 @@
         <org.valuereporter.agent>1.10.2</org.valuereporter.agent>
         <jersey-version>3.1.10</jersey-version>
         <guice-version>5.1.0</guice-version>
-        <slf4j.version>2.0.16</slf4j.version>
+        <slf4j.version>2.0.17</slf4j.version>
         <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>11.0.14</jetty.plugin.version>
         <maven.compiler.source>11</maven.compiler.source>
@@ -366,8 +366,8 @@
                                 </filter>
                             </filters>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
