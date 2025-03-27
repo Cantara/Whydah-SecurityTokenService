@@ -80,6 +80,23 @@ public class AuthenticatedUserTokenRepository {
 
     protected static long updateDefaultUserSessionExtensionTime(AppConfig appConfig) {
         long userSessionExtensionTime = 0;
+        try {
+            // Use the static method directly since we can't mock it
+            String timeoutValue = AppConfig.getProperty("user.session.timeout");
+            if (timeoutValue != null && UserTokenLifespan.isValid(timeoutValue)) {
+                userSessionExtensionTime = new UserTokenLifespan(Long.parseLong(timeoutValue)).getTimeoutInterval();
+            } else {
+                userSessionExtensionTime = BaseExpires.addPeriod(Calendar.MONTH, 6);
+            }
+        } catch(Exception ex) {
+            userSessionExtensionTime = BaseExpires.addPeriod(Calendar.MONTH, 6);
+        }
+        log.info("DEFAULT_USER_SESSION is set to " + userSessionExtensionTime);
+        return userSessionExtensionTime;
+    }
+
+    protected static long updateDefaultUserSessionExtensionTime2(AppConfig appConfig) {
+        long userSessionExtensionTime = 0;
         try{
             if (appConfig.getProperty("user.session.timeout") != null && UserTokenLifespan.isValid(appConfig.getProperty("user.session.timeout"))) {
                 userSessionExtensionTime = new UserTokenLifespan(Long.parseLong(appConfig.getProperty("user.session.timeout"))).getTimeoutInterval();

@@ -3,21 +3,16 @@ package net.whydah.sts.user;
 import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sts.config.AppConfig;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class AuthenticatedUserTokenRepositoryTest {
-
-    @Mock
-    private AppConfig appConfig;
 
     @BeforeAll
     static void shared() {
@@ -26,16 +21,25 @@ class AuthenticatedUserTokenRepositoryTest {
         EnvHelper.setEnv(envs);
     }
 
-    @BeforeEach
-    void setUp() {
-        appConfig = mock(AppConfig.class);
-    }
-
     @Test
     void updateDefaultUserSessionExtensionTime() {
-        // Use the public method instead of the private one
-        when(appConfig.getProperty("user.session.timeout")).thenReturn("240000");
-        long extensionSeconds = AuthenticatedUserTokenRepository.updateDefaultUserSessionExtensionTime(appConfig);
-        assertEquals(240000L, extensionSeconds);
+        // Using try-with-resources to ensure the static mock is properly closed
+        try (MockedStatic<AppConfig> mockedStatic = Mockito.mockStatic(AppConfig.class)) {
+            // Set up the static mock
+            mockedStatic.when(() -> AppConfig.getProperty("user.session.timeout"))
+                    .thenReturn("240000");
+
+            // Create an instance of AppConfig for the test
+            AppConfig appConfig = new AppConfig();
+
+            // Call the method under test
+            long extensionSeconds = AuthenticatedUserTokenRepository.updateDefaultUserSessionExtensionTime(appConfig);
+
+            // Verify the result
+            assertEquals(240000L, extensionSeconds, "Session extension time should match the configured value");
+
+            // Verify the static method was called
+            mockedStatic.verify(() -> AppConfig.getProperty("user.session.timeout"));
+        }
     }
 }
