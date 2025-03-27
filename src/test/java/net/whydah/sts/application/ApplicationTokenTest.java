@@ -16,34 +16,38 @@ import java.time.Instant;
 import static net.whydah.sts.application.AuthenticatedApplicationTokenRepository.DEFAULT_APPLICATION_SESSION_EXTENSION_TIME_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ApplicationTokenTest {
+class ApplicationTokenTest {
     private final static Logger log = LoggerFactory.getLogger(ApplicationTokenTest.class);
 
     @BeforeAll
-    public static void init() throws Exception {
+    static void init() throws Exception {
         System.setProperty(ApplicationMode.IAM_MODE_KEY, ApplicationMode.DEV);
     }
 
     @Test
-    public void testCreateApplicationCredential() {
+    void testCreateApplicationCredential() {
         ApplicationCredential cred = new ApplicationCredential("1212", "testapp", "dummysecret");
         ApplicationToken imp = ApplicationTokenMapper.fromApplicationCredentialXML(ApplicationCredentialMapper.toXML(cred));
-        //System.out.println(imp.toXML());
-        assertEquals("The generated application userToken is wrong.", cred.getApplicationID(), imp.getApplicationID());
-        assertTrue(imp.getApplicationTokenId().length() > 12);
+
+        assertEquals(imp.getApplicationID(), cred.getApplicationID(),
+                "ApplicationID should match the credential");
+        assertTrue(imp.getApplicationTokenId().length() > 12,
+                "ApplicationTokenId should be longer than 12 characters");
     }
 
     @Test
-    public void testCreateApplicationCredential2() {
+    void testCreateApplicationCredential2() {
         ApplicationCredential cred = new ApplicationCredential("1212", "testapp", "dummysecret");
         ApplicationToken imp = ApplicationTokenMapper.fromApplicationCredentialXML(ApplicationCredentialMapper.toXML(cred));
-        //System.out.println(imp.toXML());
-        assertEquals("The generated application userToken is wrong.", cred.getApplicationID(), imp.getApplicationID());
-        assertTrue(imp.getApplicationTokenId().length() > 12);
+
+        assertEquals(imp.getApplicationID(), cred.getApplicationID(),
+                "ApplicationID should match the credential");
+        assertTrue(imp.getApplicationTokenId().length() > 12,
+                "ApplicationTokenId should be longer than 12 characters");
     }
 
     @Test
-    public void testCreateApplicationToken() throws Exception {
+    void testCreateApplicationToken() throws Exception {
         ApplicationCredential cred = new ApplicationCredential("1212", "testapp", "dummysecret");
         ApplicationToken imp = ApplicationTokenMapper.fromApplicationCredentialXML(ApplicationCredentialMapper.toXML(cred));
         imp.setExpires(String.valueOf(System.currentTimeMillis() + 1000));
@@ -52,66 +56,74 @@ public class ApplicationTokenTest {
 
         // First attempt - with expires = now...
         ApplicationToken imp3 = AuthenticatedApplicationTokenRepository.getApplicationToken(imp.getApplicationTokenId());
-        assertTrue(imp3 == null);
+        assertNull(imp3, "Token should be null after expiration");
 
         imp.setExpires(String.valueOf(System.currentTimeMillis() + DEFAULT_APPLICATION_SESSION_EXTENSION_TIME_IN_SECONDS * 1000));
         AuthenticatedApplicationTokenRepository.addApplicationToken(imp);
+
         // Second attempt - with sensible expires
         ApplicationToken imp2 = AuthenticatedApplicationTokenRepository.getApplicationToken(imp.getApplicationTokenId());
-        //System.out.println(imp.toXML());
-        assertEquals("The generated application userToken is wrong.", cred.getApplicationID(), imp2.getApplicationID());
-        assertTrue(imp2.getApplicationTokenId().length() > 12);
+        assertNotNull(imp2, "Token should not be null before expiration");
+        assertEquals(imp2.getApplicationID(), cred.getApplicationID(),
+                "ApplicationID should match the credential");
+        assertTrue(imp2.getApplicationTokenId().length() > 12,
+                "ApplicationTokenId should be longer than 12 characters");
     }
 
     @Test
-    public void testIsApplicationTokenExpired() throws Exception {
+    void testIsApplicationTokenExpired() throws Exception {
         ApplicationCredential cred = new ApplicationCredential("1212", "testapp", "dummysecret");
         ApplicationToken imp = ApplicationTokenMapper.fromApplicationCredentialXML(ApplicationCredentialMapper.toXML(cred));
         imp.setExpires(String.valueOf(System.currentTimeMillis() + DEFAULT_APPLICATION_SESSION_EXTENSION_TIME_IN_SECONDS * 1000));
         AuthenticatedApplicationTokenRepository.addApplicationToken(imp);
 
         ApplicationToken imp2 = AuthenticatedApplicationTokenRepository.getApplicationToken(imp.getApplicationTokenId());
+        assertFalse(AuthenticatedApplicationTokenRepository.isApplicationTokenExpired(imp2),
+                "Token should not be expired with default expiration time");
 
-        assertFalse(AuthenticatedApplicationTokenRepository.isApplicationTokenExpired(imp2));
         imp2.setExpires(String.valueOf(System.currentTimeMillis() + 20));
         AuthenticatedApplicationTokenRepository.addApplicationToken(imp2);
         Thread.sleep(300);
+
         ApplicationToken imp3 = AuthenticatedApplicationTokenRepository.getApplicationToken(imp.getApplicationTokenId());
-
-        assertTrue(imp3 == null);
-
+        assertNull(imp3, "Token should be null after short expiration");
     }
 
     @Test
-    public void testSomeTimecalculations() throws Exception {
+    void testSomeTimecalculations() {
         long l1 = Instant.now().getEpochSecond();
         long l2 = HealthResource.getRunningSince().getEpochSecond();
-        if (l1 - l2 < 0) {
-            fail();
-        }
+        assertTrue(l1 - l2 >= 0,
+                "Current time should not be less than start time");
     }
 
     @Test
-    public void testAuthenticatedApplicationTokenRepositoryCleanup() throws Exception {
+    void testAuthenticatedApplicationTokenRepositoryCleanup() throws Exception {
         int applications = AuthenticatedApplicationTokenRepository.getMapSize();
-        log.debug("Applications:" + applications);
+        log.debug("Initial applications count: {}", applications);
+
         ApplicationCredential cred = new ApplicationCredential("1212", "testapp", "dummysecret");
         ApplicationToken imp = ApplicationTokenMapper.fromApplicationCredentialXML(ApplicationCredentialMapper.toXML(cred));
         imp.setExpires(String.valueOf(System.currentTimeMillis() + DEFAULT_APPLICATION_SESSION_EXTENSION_TIME_IN_SECONDS * 1000));
         AuthenticatedApplicationTokenRepository.addApplicationToken(imp);
 
         ApplicationToken imp2 = ApplicationTokenMapper.fromApplicationCredentialXML(ApplicationCredentialMapper.toXML(cred));
-        imp2.setExpires(String.valueOf(System.currentTimeMillis() + 1 * 300));  // Only one second here
+        imp2.setExpires(String.valueOf(System.currentTimeMillis() + 300)); // Short expiration
         AuthenticatedApplicationTokenRepository.addApplicationToken(imp2);
+
         int applicationsNow = AuthenticatedApplicationTokenRepository.getMapSize();
-        log.debug("ApplicationsNow:" + applicationsNow);
-        assertTrue(applications <= applicationsNow - 2);  // Need to handle tests in parallell
+        log.debug("Applications after adding tokens: {}", applicationsNow);
+
+        assertTrue(applicationsNow >= applications + 2,
+                "Application count should increase by at least 2");
+
         Thread.sleep(1500);
         AuthenticatedApplicationTokenRepository.cleanApplicationTokenMap();
-        int applicationsNow2 = AuthenticatedApplicationTokenRepository.getMapSize();
-        log.debug("Applications:" + applications);
-        log.debug("ApplicationsNow2:" + applicationsNow2);
-        assertTrue(applicationsNow2 < applicationsNow);  // Need to handle tests in parallell
 
+        int applicationsNow2 = AuthenticatedApplicationTokenRepository.getMapSize();
+        log.debug("Applications after cleanup: {}", applicationsNow2);
+
+        assertTrue(applicationsNow2 < applicationsNow,
+                "Application count should decrease after cleanup");
     }
 }

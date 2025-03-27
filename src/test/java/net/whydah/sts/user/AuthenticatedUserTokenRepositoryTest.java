@@ -5,17 +5,18 @@ import net.whydah.sts.config.AppConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class AuthenticatedUserTokenRepositoryTest {
 
+    @Mock
     private AppConfig appConfig;
 
     @BeforeAll
