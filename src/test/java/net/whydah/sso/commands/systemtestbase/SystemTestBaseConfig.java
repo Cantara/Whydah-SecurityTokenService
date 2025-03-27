@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static junit.framework.TestCase.assertTrue;
 
 public class SystemTestBaseConfig {
 

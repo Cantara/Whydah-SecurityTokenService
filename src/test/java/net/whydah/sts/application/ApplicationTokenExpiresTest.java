@@ -2,14 +2,14 @@ package net.whydah.sts.application;
 
 import net.whydah.sso.commands.systemtestbase.SystemTestBaseConfig;
 import net.whydah.sso.ddd.model.application.ApplicationTokenExpires;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static net.whydah.sts.application.AuthenticatedApplicationTokenRepository.DEFAULT_APPLICATION_SESSION_EXTENSION_TIME_IN_SECONDS;
 import static net.whydah.sts.application.AuthenticatedApplicationTokenRepository.STS_TOKEN_MULTIPLIER;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ApplicationTokenExpiresTest {
 
@@ -17,7 +17,7 @@ public class ApplicationTokenExpiresTest {
 
     static SystemTestBaseConfig config;
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws Exception {
         config = new SystemTestBaseConfig();
     }

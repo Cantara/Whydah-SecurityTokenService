@@ -2,17 +2,18 @@ package net.whydah.sts.user;
 
 import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sts.user.authentication.ActivePinRepository;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class PinPaddingTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void shared() {
         Map<String, String> envs = new HashMap<>();
         envs.put(ApplicationMode.IAM_MODE_KEY, ApplicationMode.DEV);

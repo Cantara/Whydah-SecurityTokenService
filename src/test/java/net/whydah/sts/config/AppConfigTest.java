@@ -4,21 +4,21 @@ import net.whydah.sso.application.helpers.ApplicationHelper;
 import net.whydah.sso.application.mappers.ApplicationMapper;
 import net.whydah.sso.application.types.Application;
 import net.whydah.sso.config.ApplicationMode;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class AppConfigTest {
 
     private static final Logger log = getLogger(AppConfigTest.class);
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty(ApplicationMode.IAM_MODE_KEY, ApplicationMode.TEST);
         System.setProperty(AppConfig.IAM_CONFIG_KEY, "src/test/testconfig.properties");

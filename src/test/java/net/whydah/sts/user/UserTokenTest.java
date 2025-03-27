@@ -13,9 +13,10 @@ import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.file.FreemarkerProcessor;
 import net.whydah.sts.threat.ThreatResource;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -31,7 +32,7 @@ import java.io.StringReader;
 import java.util.*;
 
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UserTokenTest {
     private FreemarkerProcessor freemarkerProcessor = new FreemarkerProcessor();
@@ -39,7 +40,7 @@ public class UserTokenTest {
     private final static DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty(ApplicationMode.IAM_MODE_KEY, ApplicationMode.DEV);
         System.setProperty(AppConfig.IAM_CONFIG_KEY, "src/test/testconfig.properties");
@@ -58,7 +59,7 @@ public class UserTokenTest {
         userToken.setRoleList(roleList);
     }
     @Test
-    @Ignore
+    @Disabled
     public void testCreateUserToken() throws Exception {
         UserToken userToken = new UserToken();
         userToken.setUid("MyUUIDValue");
@@ -95,12 +96,12 @@ public class UserTokenTest {
 
         String apptokenId = UUID.randomUUID().toString();
         AuthenticatedUserTokenRepository.addUserToken(userToken, apptokenId, "");
-        assertTrue("Verification of valid userToken failed", AuthenticatedUserTokenRepository.verifyUserToken(userToken, apptokenId));
+        assertTrue( AuthenticatedUserTokenRepository.verifyUserToken(userToken, apptokenId)); // "Verification of valid userToken failed");//,
 
         userToken.setFirstName("Pelle");
         String usertokenfromfreemarkertransformation = freemarkerProcessor.toXml(userToken);
-        assertTrue("UserToken not updated", usertokenfromfreemarkertransformation.indexOf("Pelle") > 0);
-        assertFalse("Verification of changed usertoken fail as it should", AuthenticatedUserTokenRepository.verifyUserToken(userToken, "2012xxxx"));
+        assertTrue(usertokenfromfreemarkertransformation.indexOf("Pelle") > 0); // "UserToken not updated",
+        assertFalse( AuthenticatedUserTokenRepository.verifyUserToken(userToken, "2012xxxx")); // "Verification of changed usertoken fail as it should",
     }
 
     @Test
@@ -115,11 +116,11 @@ public class UserTokenTest {
         userToken.setTimestamp(String.valueOf(System.currentTimeMillis() - 1000));
         userToken.setLifespan("0");
         AuthenticatedUserTokenRepository.addUserToken(userToken, "", "");
-        assertFalse("Verification of timed-out userToken successful", AuthenticatedUserTokenRepository.verifyUserToken(userToken, ""));
+        assertFalse(AuthenticatedUserTokenRepository.verifyUserToken(userToken, "")); // "Verification of timed-out userToken successful",
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testCreateUserTokenWithRolesFreemarkerCopy() {
         UserToken userToken = new UserToken();
         userToken.setUid(UUID.randomUUID().toString());
@@ -145,7 +146,7 @@ public class UserTokenTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testCreateUserTokenWithRolesUserTokenCopy() {
         UserToken userToken = new UserToken();
         userToken.setUid(UUID.randomUUID().toString());
@@ -320,7 +321,7 @@ public class UserTokenTest {
      * @throws Exception
      */
     @Test
-    @Ignore
+    @Disabled
     public void testUserTokenFullUserToken() throws Exception {
         assertTrue(UserTokenFactory.shouldReturnFullUserToken("2211"));
         assertFalse(UserTokenFactory.shouldReturnFullUserToken("22121"));
@@ -423,12 +424,12 @@ public class UserTokenTest {
 
         String applicationTokenId = UUID.randomUUID().toString();
         AuthenticatedUserTokenRepository.addUserToken(utoken, applicationTokenId, "test");
-        assertTrue("Verification of valid userToken failed", AuthenticatedUserTokenRepository.verifyUserToken(utoken, applicationTokenId));
+        assertTrue(AuthenticatedUserTokenRepository.verifyUserToken(utoken, applicationTokenId)); // "Verification of valid userToken failed",
 
         utoken.setFirstName("Pelle");
         String token = freemarkerProcessor.toXml(utoken);
-        assertTrue("Token not updated", token.indexOf("Pelle") > 0);
-        assertFalse("Verification of in-valid userToken successful", AuthenticatedUserTokenRepository.verifyUserToken(utoken, applicationTokenId));
+        assertTrue( token.indexOf("Pelle") > 0); // "Token not updated",
+        assertFalse( AuthenticatedUserTokenRepository.verifyUserToken(utoken, applicationTokenId)); // "Verification of in-valid userToken successful",
     }
 
     @Test

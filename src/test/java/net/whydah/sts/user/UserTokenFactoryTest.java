@@ -5,9 +5,9 @@ import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sso.whydah.DEFCON;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.net.URL;
@@ -18,7 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 2014-11-04
@@ -159,7 +160,7 @@ public class UserTokenFactoryTest {
     private static UserTokenFactory factory;
 
 
-    @BeforeClass
+    @BeforeAll
     public static void shared() {
         Map<String, String> envs = new HashMap<>();
         envs.put(ApplicationMode.IAM_MODE_KEY, ApplicationMode.DEV);
@@ -246,7 +247,7 @@ public class UserTokenFactoryTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testFromUserAggregateJsonNoRoles() throws Exception {
         UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJsonNoRoles);
 

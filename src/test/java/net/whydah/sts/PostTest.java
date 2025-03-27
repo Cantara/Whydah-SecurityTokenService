@@ -15,14 +15,14 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.glassfish.jersey.internal.util.collection.MultivaluedStringMap;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class PostTest {
     private static URI baseUri;
@@ -31,7 +31,7 @@ public class PostTest {
     private static ServiceStarter serviceStarter;
     static SystemTestBaseConfig config;
 
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         config = new SystemTestBaseConfig();
         System.setProperty(ApplicationMode.IAM_MODE_KEY, ApplicationMode.DEV);
@@ -40,12 +40,12 @@ public class PostTest {
         baseUri = UriBuilder.fromUri("http://localhost/tokenservice/").port(serviceStarter.getPort()).build();
     }
 
-    @Before
+    //@Before
     public void initRun() throws Exception {
         restClient = HttpClients.createDefault();
     }
 
-    @AfterClass
+    @AfterAll
     public static void teardown() throws Exception {
         serviceStarter.stop();
     }

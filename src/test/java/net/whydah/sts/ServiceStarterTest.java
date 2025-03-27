@@ -15,14 +15,14 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class ServiceStarterTest {
     private static ServiceStarter serviceStarter;
@@ -31,7 +31,7 @@ public class ServiceStarterTest {
 
     Client client;
 
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         System.setProperty(ApplicationMode.IAM_MODE_KEY, ApplicationMode.DEV);
         serviceStarter = new ServiceStarter();
@@ -39,13 +39,13 @@ public class ServiceStarterTest {
         baseUri = UriBuilder.fromUri("http://localhost/tokenservice/").port(serviceStarter.getPort()).build();
     }
 
-    @Before
+
     public void initRun() throws Exception {
         restClient = HttpClients.createDefault();
         client = ClientBuilder.newClient();
     }
 
-    @AfterClass
+    @AfterAll
     public static void teardown() throws Exception {
         serviceStarter.stop();
     }

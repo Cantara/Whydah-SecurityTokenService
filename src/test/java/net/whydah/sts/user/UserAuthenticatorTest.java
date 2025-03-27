@@ -4,12 +4,12 @@ import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.user.authentication.DummyUserAuthenticator;
 import net.whydah.sts.user.authentication.UserAuthenticator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class UserAuthenticatorTest {
@@ -43,7 +43,7 @@ public class UserAuthenticatorTest {
         UserAuthenticator ua = new DummyUserAuthenticator();
         UserToken ut = ua.logonUser(applicationTokenId, appTokenXml, userCredentialXml);
         // System.out.println(ut.toString());
-        assertNotNull(ut);
+        assertTrue(ut!=null);
     }
 
 
