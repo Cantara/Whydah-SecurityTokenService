@@ -31,8 +31,8 @@
         <maven.compiler.release>21</maven.compiler.release>
         <java.version>21</java.version>
         <unirest-java.version>3.14.5</unirest-java.version>
-        <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>9.4.57.v20241219</jetty.plugin.version>
+        <!-- Updated versions for Java 21 support -->
         <mockito.version>5.10.0</mockito.version>
         <byte-buddy.version>1.14.11</byte-buddy.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
@@ -73,7 +73,6 @@
     </developers>
 
     <dependencies>
-        <!-- mvn org.codehaus.mojo:versions-maven-plugin:2.2:display-dependency-updates -->
         <dependency>
             <groupId>net.whydah.sso</groupId>
             <artifactId>Whydah-Admin-SDK</artifactId>
@@ -133,29 +132,23 @@
             <version>${jersey-version}</version>
         </dependency>
 
-        <!-- Additional dependency to support JSON -->
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-multipart</artifactId>
             <version>${jersey-version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-common</artifactId>
-            <version>3.1.5</version>
+            <version>${jersey-version}</version>
         </dependency>
 
-
-        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-jaxb -->
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-jaxb</artifactId>
             <version>${jersey-version}</version>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api -->
 
         <dependency>
             <groupId>jakarta.servlet</groupId>
@@ -163,33 +156,21 @@
             <version>6.1.0</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/jakarta.ws.rs/jakarta.ws.rs-api -->
         <dependency>
             <groupId>jakarta.ws.rs</groupId>
             <artifactId>jakarta.ws.rs-api</artifactId>
             <version>3.1.0</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/jakarta.xml.bind/jakarta.xml.bind-api -->
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
             <version>4.0.2</version>
         </dependency>
 
-
-        <!--jersey -->
-        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-server -->
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-server</artifactId>
-            <version>${jersey-version}</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-server -->
-        <dependency>
-            <groupId>org.glassfish.jersey.core</groupId>
-            <artifactId>jersey-common</artifactId>
             <version>${jersey-version}</version>
         </dependency>
 
@@ -199,14 +180,11 @@
             <version>${jersey-version}</version>
         </dependency>
 
-
-        <!-- https://mvnrepository.com/artifact/com.hazelcast/hazelcast-all -->
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-all</artifactId>
             <version>4.2.8</version>
         </dependency>
-
 
         <dependency>
             <groupId>org.freemarker</groupId>
@@ -214,14 +192,12 @@
             <version>2.3.34</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.ext/jersey-mvc-freemarker -->
         <dependency>
             <groupId>org.glassfish.jersey.ext</groupId>
             <artifactId>jersey-mvc-freemarker</artifactId>
             <version>${jersey-version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-moxy -->
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-moxy</artifactId>
@@ -233,49 +209,28 @@
             <artifactId>jersey-container-grizzly2-servlet</artifactId>
             <version>${jersey-version}</version>
         </dependency>
+
+        <!-- Logging dependencies -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <!-- Flyway 3.2, httpclient and spring use Commons logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <!-- Jersey use jul -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <!-- HSQLDB use log4j -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.5.17</version>
-        </dependency>
-
-        <!-- SLF4J API -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-
-        <!-- SLF4J Log4j Implementation -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>2.0.17</version>
-        </dependency>
-
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -308,15 +263,14 @@
             </exclusions>
             <scope>test</scope>
         </dependency>
-        <!-- Update Mockito -->
+
+        <!-- Updated Mockito and ByteBuddy dependencies -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- Explicitly include ByteBuddy -->
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
@@ -329,14 +283,13 @@
             <version>${byte-buddy.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
             <artifactId>wiremock</artifactId>
             <version>2.27.2</version>
             <scope>test</scope>
         </dependency>
-
-
     </dependencies>
 
     <build>
@@ -353,7 +306,6 @@
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
-
                     </archive>
                 </configuration>
             </plugin>
@@ -368,7 +320,6 @@
                         </goals>
                         <configuration>
                             <filters>
-                                <!-- Excluding signed manifest files from dependencies. -->
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
@@ -388,11 +339,10 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--Create Windows, and Unix/Linux installation scripst -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
-                <version>2.1.0</version>    <!-- TODO: parent use 1.10. Test if 1.10 works and remove version here -->
+                <version>2.1.0</version>
                 <configuration>
                     <repositoryLayout>flat</repositoryLayout>
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
@@ -408,7 +358,6 @@
                                 <generatorConfiguration>
                                     <generator>jsw</generator>
                                     <includes>
-                                        <!--<include>windows-x86-32</include>-->
                                         <include>windows-x86-64</include>
                                     </includes>
                                     <configuration>
@@ -424,7 +373,6 @@
                                             <name>wrapper.logfile</name>
                                             <value>logs/wrapper.log</value>
                                         </property>
-
                                         <property>
                                             <name>wrapper.console.title</name>
                                             <value>${service.name}</value>
@@ -447,9 +395,7 @@
                                     <extraArgument>-XX:PermSize=32m</extraArgument>
                                     <extraArgument>-XX:MaxPermSize=32m</extraArgument>
                                     <extraArgument>-DIAM_MODE=PROD</extraArgument>
-                                    <extraArgument>-DIAM_CONFIG=config_override/securitytokenservice.PROD.properties
-                                    </extraArgument>
-                                    <!--<extraArgument>-Dlogback.configurationFile=file:config_override/logback.xml</extraArgument>-->
+                                    <extraArgument>-DIAM_CONFIG=config_override/securitytokenservice.PROD.properties</extraArgument>
                                 </extraArguments>
                             </jvmSettings>
                         </daemon>
@@ -499,7 +445,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
@@ -511,6 +456,7 @@
                     </webApp>
                 </configuration>
             </plugin>
+            <!-- Updated Surefire plugin configuration -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -521,24 +467,30 @@
                     </argLine>
                 </configuration>
             </plugin>
+            <!-- Updated compiler plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
-
     <repositories>
-        <!-- Needed for parent  -->
         <repository>
             <id>cantara-releases</id>
             <name>Cantara Release Repository</name>
             <url>https://mvnrepo.cantara.no/content/repositories/releases/</url>
         </repository>
-        <!-- Needed for SDK snapshots  -->
         <repository>
             <id>cantara-snapshots</id>
             <name>Cantara Snapshot Repository</name>
             <url>https://mvnrepo.cantara.no/content/repositories/snapshots/</url>
         </repository>
     </repositories>
-
-
 </project>
