@@ -1,8 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.whydah.token</groupId>
     <artifactId>SecurityTokenService</artifactId>
-    <version>2.27.1-SNAPSHOT</version>
+    <version>2.30.0-SNAPSHOT</version>
     <name>SecurityTokenService</name>
     <url>https://wiki.cantara.no/display/iam/SecurityTokenService</url>
     <parent>
@@ -17,24 +18,23 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
+    <jdk.version>21</jdk.version>
         <service.name>Whydah-SecurityTokenService</service.name>
-        <whydah.admin.sdk.version>2.27.3</whydah.admin.sdk.version>
+        <whydah.admin.sdk.version>2.30.0</whydah.admin.sdk.version>
         <org.valuereporter.agent>1.10.15</org.valuereporter.agent>
         <jersey-version>3.1.10</jersey-version>
         <guice-version>5.1.0</guice-version>
         <slf4j.version>2.0.17</slf4j.version>
         <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>11.0.14</jetty.plugin.version>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.release>11</maven.compiler.release>
-        <java.version>11</java.version>
-	<unirest-java.version>3.14.5</unirest-java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
+        <java.version>21</java.version>
+        <unirest-java.version>3.14.5</unirest-java.version>
         <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>9.4.52.v20230823</jetty.plugin.version>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        
+
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <additionalparam>-Xdoclint:none</additionalparam>
     </properties>
@@ -139,14 +139,14 @@
             <artifactId>jersey-media-multipart</artifactId>
             <version>${jersey-version}</version>
         </dependency>
-        
+
         <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
-		<dependency>
-		    <groupId>org.glassfish.jersey.core</groupId>
-		    <artifactId>jersey-common</artifactId>
-		    <version>3.1.5</version>
-		</dependency>
-		        
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-common</artifactId>
+            <version>3.1.5</version>
+        </dependency>
+
 
         <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-jaxb -->
         <dependency>
@@ -198,17 +198,15 @@
             <artifactId>jersey-mvc</artifactId>
             <version>${jersey-version}</version>
         </dependency>
-     
-
-		<!-- https://mvnrepository.com/artifact/com.hazelcast/hazelcast-all -->
-		<dependency>
-		    <groupId>com.hazelcast</groupId>
-		    <artifactId>hazelcast-all</artifactId>
-		    <version>4.2.8</version>
-		</dependency>
 
 
-       
+        <!-- https://mvnrepository.com/artifact/com.hazelcast/hazelcast-all -->
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-all</artifactId>
+            <version>4.2.8</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.freemarker</groupId>
@@ -223,12 +221,12 @@
             <version>${jersey-version}</version>
         </dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-moxy -->
-		<dependency>
-		    <groupId>org.glassfish.jersey.media</groupId>
-		    <artifactId>jersey-media-moxy</artifactId>
-		    <version>${jersey-version}</version>
-		</dependency>
+        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-moxy -->
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-moxy</artifactId>
+            <version>${jersey-version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
@@ -322,8 +320,8 @@
             <version>2.27.2</version>
             <scope>test</scope>
         </dependency>
-		
-	
+
+
     </dependencies>
 
     <build>
@@ -366,8 +364,10 @@
                                 </filter>
                             </filters>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>

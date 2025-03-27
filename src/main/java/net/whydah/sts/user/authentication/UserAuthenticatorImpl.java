@@ -58,7 +58,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 
         UserToken uToken = new CommandVerifyUserCredential(useradminservice, appTokenXml, applicationTokenId, userCredentialXml).execute();
         if (uToken == null) {
-            throw new AuthenticationFailedException(String.format("Authentication failed for user: %s, appTokenId: %s", userCredentialXml, applicationTokenId));
+            throw new AuthenticationFailedException("Authentication failed for user: %s, appTokenId: %s".formatted(userCredentialXml, applicationTokenId));
         }
         // credential check success
         UserToken existingUserToken = AuthenticatedUserTokenRepository.getUserTokenByUserName(userCredential.getUserName(), applicationTokenId);
@@ -91,7 +91,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
                     return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "pin");
                 }
             } catch (Exception e) {
-                log.error(String.format("createAndLogonPinUser - Problems connecting to %s", useradminservice), e);
+                log.error("createAndLogonPinUser - Problems connecting to %s".formatted(useradminservice), e);
                 throw e;
             }
         }

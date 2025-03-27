@@ -14,7 +14,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,61 +91,69 @@ public class UserTokenFactoryTest {
             "    <hash type=\"MD5\">88e4a2db17733f371e8f78e123108d13</hash>\n" +
             "</usertoken>";
 
-    private final String usersJsonWithOne = "{\n" +
-            "\"rows\":\"1\",\n" +
-            "\"result\":\n" +
-            "[{\n" +
-            " \"personRef\":\"1\",\n" +
-            " \"uid\":\"andersflaten\",\n" +
-            " \"username\":\"91609953\",\n" +
-            " \"firstName\":\"Anders\",\n" +
-            " \"lastName\":\"Flaten\",\n" +
-            " \"email\":\"anders.flaten@gmail.com\",\n" +
-            " \"cellPhone\":\"+4791609953\",\n" +
-            " \"uri\":\"http://localhost:9995/uib/useradmin/users/anders.flaten\\/\"\n" +
-            "}]\n" +
-            "}";
+    private final String usersJsonWithOne = """
+            {
+            "rows":"1",
+            "result":
+            [{
+             "personRef":"1",
+             "uid":"andersflaten",
+             "username":"91609953",
+             "firstName":"Anders",
+             "lastName":"Flaten",
+             "email":"anders.flaten@gmail.com",
+             "cellPhone":"+4791609953",
+             "uri":"http://localhost:9995/uib/useradmin/users/anders.flaten\\/"
+            }]
+            }\
+            """;
 
-    private final String usersJsonWithTwo = "{\n" +
-            "\"rows\":\"2\",\n" +
-            "\"result\":\n" +
-            "[{\n" +
-            " \"personRef\":\"\",\n" +
-            " \"uid\":\"a31004eb-6348-436c-a365-d5d8c181aa3b\",\n" +
-            " \"username\":\"bruker1\",\n" +
-            " \"firstName\":\"Bob\",\n" +
-            " \"lastName\":\"Scott\",\n" +
-            " \"email\":\"bob@gmail.com\",\n" +
-            " \"cellPhone\":\"55555501\",\n" +
-            " \"uri\":\"http://localhost:9995/uib/useradmin/users/a31004eb-6348-436c-a365-d5d8c181aa3b\\/\"\n" +
-            "},{\n" +
-            " \"personRef\":\"\",\n" +
-            " \"uid\":\"fc5c8097-e778-4ba4-9a4a-d08347616b51\",\n" +
-            " \"username\":\"bruker2\",\n" +
-            " \"firstName\":\"Ted\",\n" +
-            " \"lastName\":\"Scott\",\n" +
-            " \"email\":\"ted@gmail.com\",\n" +
-            " \"cellPhone\":\"55555502\",\n" +
-            " \"uri\":\"http://localhost:9995/uib/useradmin/users/fc5c8097-e778-4ba4-9a4a-d08347616b51\\/\"\n" +
-            "}]\n" +
-            "}";
+    private final String usersJsonWithTwo = """
+            {
+            "rows":"2",
+            "result":
+            [{
+             "personRef":"",
+             "uid":"a31004eb-6348-436c-a365-d5d8c181aa3b",
+             "username":"bruker1",
+             "firstName":"Bob",
+             "lastName":"Scott",
+             "email":"bob@gmail.com",
+             "cellPhone":"55555501",
+             "uri":"http://localhost:9995/uib/useradmin/users/a31004eb-6348-436c-a365-d5d8c181aa3b\\/"
+            },{
+             "personRef":"",
+             "uid":"fc5c8097-e778-4ba4-9a4a-d08347616b51",
+             "username":"bruker2",
+             "firstName":"Ted",
+             "lastName":"Scott",
+             "email":"ted@gmail.com",
+             "cellPhone":"55555502",
+             "uri":"http://localhost:9995/uib/useradmin/users/fc5c8097-e778-4ba4-9a4a-d08347616b51\\/"
+            }]
+            }\
+            """;
 
-    private final String usersJsonWithZeroUsers = "{\n" +
-            "\"rows\":\"0\",\n" +
-            "\"result\":\n" +
-            "[]\n" +
-            "}";
+    private final String usersJsonWithZeroUsers = """
+            {
+            "rows":"0",
+            "result":
+            []
+            }\
+            """;
 
-    private final String userAggregateJsonNoRoles = "{\n" +
-            "  \"uid\": \"dd313\",\n" +
-            "  \"username\": \"dduck\",\n" +
-            "  \"firstName\": \"Donald\",\n" +
-            "  \"lastName\": \"Duck\",\n" +
-            "  \"personRef\": \"1\",\n" +
-            "  \"email\": \"donald.duck@gmail.com\",\n" +
-            "  \"cellPhone\": \"12341234\",\n" +
-            "  \"roles\": []\n" +
-            "}";
+    private final String userAggregateJsonNoRoles = """
+            {
+              "uid": "dd313",
+              "username": "dduck",
+              "firstName": "Donald",
+              "lastName": "Duck",
+              "personRef": "1",
+              "email": "donald.duck@gmail.com",
+              "cellPhone": "12341234",
+              "roles": []
+            }\
+            """;
 
 
     private static UserTokenFactory factory;
@@ -185,7 +192,7 @@ public class UserTokenFactoryTest {
 //        assertEquals(userToken.getLifespan(), "3600000");
         assertEquals(userToken.getRoleList().size(), 4);
 
-        UserApplicationRoleEntry roleEntry1 = userToken.getRoleList().get(0);
+        UserApplicationRoleEntry roleEntry1 = userToken.getRoleList().getFirst();
         assertEquals(roleEntry1.getApplicationId(), "199");
         assertEquals(roleEntry1.getApplicationName(), "WhydahTestWebApplication");
         assertEquals(roleEntry1.getOrgName(), "Whydah");
@@ -264,7 +271,7 @@ public class UserTokenFactoryTest {
     private String readFile(String inClassPath, Charset encoding) throws Exception {
         URL url = getClass().getResource(inClassPath);
         URI uri = url.toURI();
-        Path path = Paths.get(uri);
+        Path path = Path.of(uri);
         byte[] encoded = Files.readAllBytes(path);
         return new String(encoded, encoding);
     }

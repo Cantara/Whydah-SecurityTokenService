@@ -25,13 +25,15 @@ public class UserAuthenticatorTest {
             "     </params> \n" +
             "     <Url type=\"application/xml\" method=\"POST\" template=\"http://localhost:9998/tokenservice/user/81dc9bdb52d04dc20036dbd8313ed055/get_usertoken_by_usertokenid\"/> \n" +
             " </token>";
-    String userCredentialXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?> \n" +
-            " <usercredential>\n" +
-            "    <params>\n" +
-            "        <username>test@hotmail.com</username>\n" +
-            "        <password>061073</password>\n" +
-            "    </params> \n" +
-            "</usercredential>\n";
+    String userCredentialXml = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>\s
+             <usercredential>
+                <params>
+                    <username>test@hotmail.com</username>
+                    <password>061073</password>
+                </params>\s
+            </usercredential>
+            """;
 
     @Test
     public void testDummyUserAuthenticator() {

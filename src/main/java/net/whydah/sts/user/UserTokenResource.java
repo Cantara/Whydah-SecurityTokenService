@@ -1749,7 +1749,7 @@ public class UserTokenResource {
 			MonitorReporter.reportActivity(observedActivity);
 			return createUserTokenResponse(applicationtokenid, userToken);
 		} catch (AuthenticationFailedException ae) {
-			log.warn(String.format("createAndLogOnPinUser - Error creating or authenticating user. jsonuser=%s", newUserjson), ae);
+			log.warn("createAndLogOnPinUser - Error creating or authenticating user. jsonuser=%s".formatted(newUserjson), ae);
 			//return Response.status(Response.Status.FORBIDDEN).entity("Error creating or authenticating user.").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			throw AppExceptionCode.USER_AUTHENTICATION_FAILED_6000;
 		}

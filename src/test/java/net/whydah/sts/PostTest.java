@@ -67,15 +67,17 @@ public class PostTest {
     public void testLogonUIBApplication() {
         if (config.systemTest) {
             String appCredential =
-                    " <applicationcredential>\n" +
-                            "    <params>\n" +
-                            "        <applicationID>2210</applicationID>\n" +
-                            "        <applicationName>Whydah-UserIdentityBackend</applicationName>\n" +
-                            "        <applicationSecret>6r46g3q986Ep6By7B9J46m96D</applicationSecret>\n" +
-                            "        <applicationurl></applicationurl>\n" +
-                            "        <minimumsecuritylevel>0</minimumsecuritylevel>" +
-                            "    </params> \n" +
-                            "</applicationcredential>\n";
+                    """
+                     <applicationcredential>
+                        <params>
+                            <applicationID>2210</applicationID>
+                            <applicationName>Whydah-UserIdentityBackend</applicationName>
+                            <applicationSecret>6r46g3q986Ep6By7B9J46m96D</applicationSecret>
+                            <applicationurl></applicationurl>
+                            <minimumsecuritylevel>0</minimumsecuritylevel>\
+                        </params>\s
+                    </applicationcredential>
+                    """;
 
             String responseXML = logonApplication(appCredential);
             assertTrue(responseXML.contains("applicationtoken"));
@@ -90,14 +92,16 @@ public class PostTest {
         if (config.systemTest) {
 
             String appCredential =
-                    "<applicationcredential>\n" +
-                            "    <params>\n" +
-                            "        <applicationID>2212</applicationID>\n" +
-                            "        <applicationName>INN UserAdminService-3</applicationName>\n" +
-                            "        <applicationSecret>9ju592A4t8dzz8mz7a5QQJ7Px</applicationSecret>\n" +
-                            "        <applicationurl></applicationurl>\n" +
-                            "        <minimumsecuritylevel>0</minimumsecuritylevel>    </params> \n" +
-                            "</applicationcredential>\n";
+                    """
+                    <applicationcredential>
+                        <params>
+                            <applicationID>2212</applicationID>
+                            <applicationName>INN UserAdminService-3</applicationName>
+                            <applicationSecret>9ju592A4t8dzz8mz7a5QQJ7Px</applicationSecret>
+                            <applicationurl></applicationurl>
+                            <minimumsecuritylevel>0</minimumsecuritylevel>    </params>\s
+                    </applicationcredential>
+                    """;
 
             String responseXML = logonApplication(appCredential);
             assertTrue(responseXML.contains("applicationtoken"));

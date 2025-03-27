@@ -166,66 +166,71 @@ public class UserTokenTest {
 
     @Test
     public void createFromUserIdentityXML() {
-        String identityXML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
-                "<whydahuser>\n" +
-                "    <identity>\n" +
-                "        <username>admin</username>\n" +
-                "        <cellPhone>+1555406789</cellPhone>\n" +
-                "        <email>useradmin@getwhydah.com</email>\n" +
-                "        <firstname>User</firstname>\n" +
-                "        <lastname>Admin</lastname>\n" +
-                "        <personref>0</personref>\n" +
-                "        <UID>useradmin</UID>\n" +
-                "    </identity>\n" +
-                "    <applications>\n" +
-                "        <application>\n" +
-                "            <appId>19</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>WhydahUserAdmin</roleName>\n" +
-                "            <roleValue>1</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>19</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>TEST</roleName>\n" +
-                "            <roleValue>13</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>19</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>ACS</orgName>\n" +
-                "            <roleName>TULL</roleName>\n" +
-                "            <roleValue>1</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>199</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>WhydahUserAdmin</roleName>\n" +
-                "            <roleValue>1</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>19</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>UserAdmin</roleName>\n" +
-                "            <roleValue>100</roleValue>\n" +
-                "        </application>\n" +
-                "    </applications>\n" +
-                "</whydahuser>\n";
+        String identityXML = """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <whydahuser>
+                    <identity>
+                        <username>admin</username>
+                        <cellPhone>+1555406789</cellPhone>
+                        <email>useradmin@getwhydah.com</email>
+                        <firstname>User</firstname>
+                        <lastname>Admin</lastname>
+                        <personref>0</personref>
+                        <UID>useradmin</UID>
+                    </identity>
+                    <applications>
+                        <application>
+                            <appId>19</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>WhydahUserAdmin</roleName>
+                            <roleValue>1</roleValue>
+                        </application>
+                        <application>
+                            <appId>19</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>TEST</roleName>
+                            <roleValue>13</roleValue>
+                        </application>
+                        <application>
+                            <appId>19</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>ACS</orgName>
+                            <roleName>TULL</roleName>
+                            <roleValue>1</roleValue>
+                        </application>
+                        <application>
+                            <appId>199</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>WhydahUserAdmin</roleName>
+                            <roleValue>1</roleValue>
+                        </application>
+                        <application>
+                            <appId>19</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>UserAdmin</roleName>
+                            <roleValue>100</roleValue>
+                        </application>
+                    </applications>
+                </whydahuser>
+                """;
 
 
-        String appXML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?> \n " +
-                " <token>\n" +
-                "     <params>\n" +
-                "         <applicationtoken>123123123123</applicationtoken>\n" +
-                "         <applicationid>123</applicationid>\n" +
-                "         <applicationname>ACS</applicationname>\n" +
-                "         <expires>3213213212</expires>\n" +
-                "     </params> \n" +
-                " </token>\n";
+        String appXML = """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>\s
+                 \
+                 <token>
+                     <params>
+                         <applicationtoken>123123123123</applicationtoken>
+                         <applicationid>123</applicationid>
+                         <applicationname>ACS</applicationname>
+                         <expires>3213213212</expires>
+                     </params>\s
+                 </token>
+                """;
         //UserToken2 userToken = UserToken2.createUserTokenFromUserAggregate(appXML, identityXML);
 
         UserToken userToken = UserTokenMapper.fromUserAggregateXml(identityXML);
@@ -245,48 +250,50 @@ public class UserTokenTest {
 
     @Test
     public void testUserAggregateParsing() throws Exception {
-        String identityXML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
-                "<whydahuser>\n" +
-                "    <identity>\n" +
-                "        <username>admin</username>\n" +
-                "        <cellPhone>+1555406789</cellPhone>\n" +
-                "        <email>useradmin@getwhydah.com</email>\n" +
-                "        <firstname>User</firstname>\n" +
-                "        <lastname>Admin</lastname>\n" +
-                "        <personref>0</personref>\n" +
-                "        <UID>useradmin</UID>\n" +
-                "    </identity>\n" +
-                "    <applications>\n" +
-                "        <application>\n" +
-                "            <appId>193</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>WhydahUserAdmin</roleName>\n" +
-                "            <roleValue>1</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>193</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>UserAdmin</roleName>\n" +
-                "            <roleValue>100</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>121</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>UserAdmin</roleName>\n" +
-                "            <roleValue>100</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>193</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>TEST</roleName>\n" +
-                "            <roleValue>3</roleValue>\n" +
-                "        </application>\n" +
-                "    </applications>\n" +
-                "</whydahuser>\n";
+        String identityXML = """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <whydahuser>
+                    <identity>
+                        <username>admin</username>
+                        <cellPhone>+1555406789</cellPhone>
+                        <email>useradmin@getwhydah.com</email>
+                        <firstname>User</firstname>
+                        <lastname>Admin</lastname>
+                        <personref>0</personref>
+                        <UID>useradmin</UID>
+                    </identity>
+                    <applications>
+                        <application>
+                            <appId>193</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>WhydahUserAdmin</roleName>
+                            <roleValue>1</roleValue>
+                        </application>
+                        <application>
+                            <appId>193</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>UserAdmin</roleName>
+                            <roleValue>100</roleValue>
+                        </application>
+                        <application>
+                            <appId>121</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>UserAdmin</roleName>
+                            <roleValue>100</roleValue>
+                        </application>
+                        <application>
+                            <appId>193</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>TEST</roleName>
+                            <roleValue>3</roleValue>
+                        </application>
+                    </applications>
+                </whydahuser>
+                """;
         List<UserApplicationRoleEntry> roleList = new LinkedList<>();
 
         DocumentBuilder documentBuilder = dbf.newDocumentBuilder();
@@ -322,48 +329,50 @@ public class UserTokenTest {
 
     @Test
     public void testUserTokenFiltering() throws Exception {
-        String identityXML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
-                "<whydahuser>\n" +
-                "    <identity>\n" +
-                "        <username>admin</username>\n" +
-                "        <cellPhone>+1555406789</cellPhone>\n" +
-                "        <email>useradmin@getwhydah.com</email>\n" +
-                "        <firstname>User</firstname>\n" +
-                "        <lastname>Admin</lastname>\n" +
-                "        <personref>0</personref>\n" +
-                "        <UID>useradmin</UID>\n" +
-                "    </identity>\n" +
-                "    <applications>\n" +
-                "        <application>\n" +
-                "            <appId>193</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>WhydahUserAdmin</roleName>\n" +
-                "            <roleValue>1</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>193</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>UserAdmin</roleName>\n" +
-                "            <roleValue>100</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>121</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>UserAdmin</roleName>\n" +
-                "            <roleValue>100</roleValue>\n" +
-                "        </application>\n" +
-                "        <application>\n" +
-                "            <appId>193</appId>\n" +
-                "            <applicationName>UserAdminWebApplication</applicationName>\n" +
-                "            <orgName>Support</orgName>\n" +
-                "            <roleName>TEST</roleName>\n" +
-                "            <roleValue>3</roleValue>\n" +
-                "        </application>\n" +
-                "    </applications>\n" +
-                "</whydahuser>\n";
+        String identityXML = """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <whydahuser>
+                    <identity>
+                        <username>admin</username>
+                        <cellPhone>+1555406789</cellPhone>
+                        <email>useradmin@getwhydah.com</email>
+                        <firstname>User</firstname>
+                        <lastname>Admin</lastname>
+                        <personref>0</personref>
+                        <UID>useradmin</UID>
+                    </identity>
+                    <applications>
+                        <application>
+                            <appId>193</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>WhydahUserAdmin</roleName>
+                            <roleValue>1</roleValue>
+                        </application>
+                        <application>
+                            <appId>193</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>UserAdmin</roleName>
+                            <roleValue>100</roleValue>
+                        </application>
+                        <application>
+                            <appId>121</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>UserAdmin</roleName>
+                            <roleValue>100</roleValue>
+                        </application>
+                        <application>
+                            <appId>193</appId>
+                            <applicationName>UserAdminWebApplication</applicationName>
+                            <orgName>Support</orgName>
+                            <roleName>TEST</roleName>
+                            <roleValue>3</roleValue>
+                        </application>
+                    </applications>
+                </whydahuser>
+                """;
 
 
         UserToken userToken = UserTokenMapper.fromUserAggregateXml(identityXML);

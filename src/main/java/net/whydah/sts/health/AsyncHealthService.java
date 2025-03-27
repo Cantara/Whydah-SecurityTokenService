@@ -292,13 +292,13 @@ public class AsyncHealthService implements Runnable {
                 try {
                     theatSignal = mapper.readValue(theatSignalJson, ThreatSignal.class);
                 } catch (JsonProcessingException e) {
-                    log.error(String.format("Unable to deserialize threat-signal, json: %s", theatSignalJson), e);
+                    log.error("Unable to deserialize threat-signal, json: %s".formatted(theatSignalJson), e);
                     continue;
                 }
                 obfuscateThreatSignal(theatSignal);
                 obfuscatedThreatSignalList.add(theatSignal);
                 if (obfuscatedThreatSignalList.size() > MAX_THREAT_SIGNALS_IN_HEALTH) {
-                    obfuscatedThreatSignalList.remove(0);
+                    obfuscatedThreatSignalList.removeFirst();
                 }
             }
             if (rs.getNextSequenceToReadFrom() != -1) {
@@ -337,16 +337,16 @@ public class AsyncHealthService implements Runnable {
         try {
             value = valueConsumer.get();
         } catch (Throwable t) {
-            log.warn(String.format("Ignoring health field, error while attempting to compute field: '%s'", key), t);
+            log.warn("Ignoring health field, error while attempting to compute field: '%s'".formatted(key), t);
         }
         if (value == null) {
             return updateField(health, key, (String) null);
         }
-        if (value instanceof String) {
-            return updateField(health, key, (String) value);
+        if (value instanceof String string) {
+            return updateField(health, key, string);
         }
-        if (value instanceof JsonNode) {
-            health.set(key, (JsonNode) value);
+        if (value instanceof JsonNode node) {
+            health.set(key, node);
             return true;
         }
         return updateField(health, key, String.valueOf(value));
