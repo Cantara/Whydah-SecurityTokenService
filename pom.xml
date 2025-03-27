@@ -18,7 +18,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-    <jdk.version>21</jdk.version>
+        <jdk.version>21</jdk.version>
         <service.name>Whydah-SecurityTokenService</service.name>
         <whydah.admin.sdk.version>2.30.0</whydah.admin.sdk.version>
         <org.valuereporter.agent>1.10.15</org.valuereporter.agent>
@@ -33,7 +33,8 @@
         <unirest-java.version>3.14.5</unirest-java.version>
         <grizzy-version>4.0.2</grizzy-version>
         <jetty.plugin.version>9.4.57.v20241219</jetty.plugin.version>
-
+        <mockito.version>5.10.0</mockito.version>
+        <byte-buddy.version>1.14.11</byte-buddy.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <additionalparam>-Xdoclint:none</additionalparam>
     </properties>
@@ -307,10 +308,25 @@
             </exclusions>
             <scope>test</scope>
         </dependency>
+        <!-- Update Mockito -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.2.0</version>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Explicitly include ByteBuddy -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>${byte-buddy.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+            <version>${byte-buddy.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -493,6 +509,16 @@
                     <webApp>
                         <contextPath>/</contextPath>
                     </webApp>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <argLine>
+                        -Dnet.bytebuddy.experimental=true
+                    </argLine>
                 </configuration>
             </plugin>
         </plugins>
