@@ -26,14 +26,13 @@
         <guice-version>5.1.0</guice-version>
         <slf4j.version>2.0.17</slf4j.version>
         <grizzy-version>4.0.2</grizzy-version>
-        <jetty.plugin.version>11.0.14</jetty.plugin.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <maven.compiler.release>21</maven.compiler.release>
         <java.version>21</java.version>
         <unirest-java.version>3.14.5</unirest-java.version>
         <grizzy-version>4.0.2</grizzy-version>
-        <jetty.plugin.version>9.4.52.v20230823</jetty.plugin.version>
+        <jetty.plugin.version>9.4.57.v20241219</jetty.plugin.version>
 
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <additionalparam>-Xdoclint:none</additionalparam>
