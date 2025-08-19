@@ -20,7 +20,7 @@
         <jdk.version>21</jdk.version>
         <service.name>Whydah-SecurityTokenService</service.name>
         <whydah.admin.sdk.version>2.31.1</whydah.admin.sdk.version>
-        <org.valuereporter.agent>1.10.15</org.valuereporter.agent>
+        <org.valuereporter.agent>1.10.18</org.valuereporter.agent>
         <jersey-version>3.1.10</jersey-version>
         <guice-version>5.1.0</guice-version>
         <slf4j.version>2.0.17</slf4j.version>
