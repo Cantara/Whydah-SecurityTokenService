@@ -1739,6 +1739,7 @@ public class UserTokenResource {
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
 		try {
+
 			UserToken userToken = userAuthenticator.createAndLogonPinUser(applicationtokenid, appTokenXml, adminUserTokenId, cellPhone, pin, newUserjson);
 			userticketmap.put(userticket, userToken.getUserTokenId());
 			log.debug("createAndLogOnPinUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());

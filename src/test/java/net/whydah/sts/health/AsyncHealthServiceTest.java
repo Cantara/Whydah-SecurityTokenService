@@ -54,7 +54,7 @@ public class AsyncHealthServiceTest {
             JsonNode threatSignalsNode = healthNode.get("threat_signals");
             List<ThreatSignal> threatSignals = mapper.convertValue(threatSignalsNode, mapper.getTypeFactory().constructCollectionType(List.class, ThreatSignal.class));
             assertEquals(6, threatSignals.size());
-            assertEquals("test-text-1", threatSignals.getFirst().getText());
+            assertEquals("test-text-1", threatSignals.get(0).getText());
             assertEquals("test-text-2", threatSignals.get(1).getText());
             assertEquals("test-text-3", threatSignals.get(2).getText());
             assertEquals("test-text-4", threatSignals.get(3).getText());

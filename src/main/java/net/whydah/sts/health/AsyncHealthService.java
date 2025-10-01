@@ -298,7 +298,7 @@ public class AsyncHealthService implements Runnable {
                 obfuscateThreatSignal(theatSignal);
                 obfuscatedThreatSignalList.add(theatSignal);
                 if (obfuscatedThreatSignalList.size() > MAX_THREAT_SIGNALS_IN_HEALTH) {
-                    obfuscatedThreatSignalList.removeFirst();
+                    obfuscatedThreatSignalList.remove(0);
                 }
             }
             if (rs.getNextSequenceToReadFrom() != -1) {

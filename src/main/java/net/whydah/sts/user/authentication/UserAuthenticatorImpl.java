@@ -5,6 +5,8 @@ import net.whydah.sso.application.mappers.ApplicationTokenMapper;
 import net.whydah.sso.application.types.ApplicationToken;
 import net.whydah.sso.commands.adminapi.user.CommandGetUserAggregate;
 import net.whydah.sso.commands.adminapi.user.CommandListUsers;
+import net.whydah.sso.commands.adminapi.user.CommandUserExists;
+import net.whydah.sso.user.helpers.UserTokenXpathHelper;
 import net.whydah.sso.user.mappers.UserCredentialMapper;
 import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserCredential;
@@ -83,10 +85,32 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     public UserToken createAndLogonPinUser(String applicationTokenId, String appTokenXml, String adminUserTokenId, String cellPhone, String pin, String userJson) {
         if (ActivePinRepository.usePin(cellPhone, pin)) {
             try {
+            	    //check if the user exists or not, better to avoid misused calls
+            	    Boolean exists = new CommandUserExists(useradminservice, applicationTokenId, adminUserTokenId, cellPhone).execute();
+            	    if(exists) {
+	            	    	UserToken existingUserToken = AuthenticatedUserTokenRepository.getUserTokenByUserName(cellPhone, applicationTokenId);
+	            	    	if(existingUserToken!=null) {
+	            	    		return existingUserToken;
+	            	    	} else {
+	            	    		//check against UAS
+	            	    		String usersQuery = cellPhone;
+	            	    		String usersJson = new CommandListUsers(useradminservice, applicationTokenId, adminUserTokenId, usersQuery).execute();
+	            	    		log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+	            	    		UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
+	            	    		if (userTokenIdentity != null) {
+	            	    			log.info("Found matching UserIdentity {}", userTokenIdentity);
+	            	    			String userAggregateJson = new CommandGetUserAggregate(useradminservice, applicationTokenId, adminUserTokenId, userTokenIdentity.getUid()).execute();
+	            	    			UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
+	            	    			userToken.setSecurityLevel("0");  
+	            	    			userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
+	            	    			return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "pin");
+	            	    		}
+	            	    	}
+            	    }
+                
                 UserToken userToken = new CommandCreatePinUser(useradminservice, appTokenXml, applicationTokenId, adminUserTokenId, userJson).execute();
                 if (userToken == null) {
                     throw new AuthenticationFailedException("Pin authentication failed. Status code ");
-
                 } else {
                     return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "pin");
                 }
@@ -276,7 +300,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 	public UserToken logonUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml, String adminUserTokenId,
 			String cellPhone, String secret) {
 		log.info("logonUserUsingSharedSTSSecret() called with " + "applicationtokenid = [" + applicationtokenid + "], appTokenXml = [" + appTokenXml + "], cellPhone = [" + cellPhone + "], secrect = [" + secret + "]");
-        if (appConfig.getProperty("ssolwa_sts_shared_secrect").equals(secret)) {
+        if (AppConfig.getProperty("ssolwa_sts_shared_secrect").equals(secret)) {
             String usersQuery = cellPhone;
             
             String usersJson = new CommandListUsers(useradminservice, applicationtokenid, adminUserTokenId, usersQuery).execute();

@@ -193,7 +193,7 @@ public class UserTokenFactoryTest {
 //        assertEquals(userToken.getLifespan(), "3600000");
         assertEquals(userToken.getRoleList().size(), 4);
 
-        UserApplicationRoleEntry roleEntry1 = userToken.getRoleList().getFirst();
+        UserApplicationRoleEntry roleEntry1 = userToken.getRoleList().get(0);
         assertEquals(roleEntry1.getApplicationId(), "199");
         assertEquals(roleEntry1.getApplicationName(), "WhydahTestWebApplication");
         assertEquals(roleEntry1.getOrgName(), "Whydah");
