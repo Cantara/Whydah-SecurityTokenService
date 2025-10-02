@@ -613,30 +613,35 @@ public class UserTokenResource {
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
 
+		/* HUY: temporarily disable since it just lock the usertokenid
 		if (failinguserTokenMap.get(userTokenId) != null) {
 			log.warn("getUserTokenByUserTokenId - repeatedly attempt to access with non-acceptable usertokenid={}", userTokenId);
 			//return Response.status(Response.Status.NOT_ACCEPTABLE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("getUserTokenByUserTokenId - blacklisted - attempt to access with non acceptable usertokenid=" + userTokenId);
-		}
+		}*/
 
-		final UserToken userToken = AuthenticatedUserTokenRepository.getUserToken(userTokenId, applicationtokenid);
-		//final UserToken userToken = refreshAndGetThisUser(userTokenId, applicationtokenid);
+		UserToken userToken = AuthenticatedUserTokenRepository.getUserToken(userTokenId, applicationtokenid);
+		
 		if (userToken == null) {
 			log.warn("getUserTokenByUserTokenId - attempt to access with non-acceptable usertokenid={}", userTokenId);
 			//return Response.status(Response.Status.NOT_ACCEPTABLE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 
 			// make it a bit more robust in terms of requiring two consewuitive attempts before being blacklisted.
+			/*Huy: temporarily disable it
+			 * 
 			if (failingUserTokenId != null && failingUserTokenId.equalsIgnoreCase(userTokenId)) {
 				failinguserTokenMap.put(userTokenId, userTokenId);
 				failingUserTokenId = null;
 			} else {
 				failingUserTokenId = userTokenId;
-			}
+			}*/
+			
+			
 			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("getUserTokenByUserTokenId - initial attempt to access with non-acceptable usertokenid=" + userTokenId);
-		}
+		} 
+		
 		log.info("getUserTokenByUserTokenId - valid session found for {} ", userTokenId);
-
-
+		
 		return createUserTokenResponse(applicationtokenid, userToken);
 	}
 
