@@ -15,13 +15,13 @@ public class ApplicationModelHelper {
 
     private static final Logger log = LoggerFactory.getLogger(ApplicationModelHelper.class);
 
-    public static long getUserTokenLifeSpan(String applicationtokenid) {
+    public static long getUserTokenLifeSpanInMilliSecondsFromApplicationTokenId(String applicationtokenid) {
         ApplicationToken appToken = AuthenticatedApplicationTokenRepository.getApplicationToken(applicationtokenid);
         if(appToken!=null){
 			Application app = ApplicationModelFacade.getApplication(appToken.getApplicationID());
 			//set the correct timeout depends on the application's security
 			if(app!=null){
-				long lifespan = getUserTokenLifeSpan(app);
+				long lifespan = getUserTokenLifeSpanInMilliSecondsFromApplication(app);
                 log.debug("Returning ApplicationToken applicationlifespanseconds:{} for applicationtokenid:{}", lifespan, applicationtokenid);
                 return lifespan;
             }
@@ -30,7 +30,7 @@ public class ApplicationModelHelper {
         return DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS;
     }
 
-    public static long getUserTokenLifeSpan(Application app) {
+    public static long getUserTokenLifeSpanInMilliSecondsFromApplication(Application app) {
         if (app.getSecurity() != null) {
             long maxUserSessionFromApplication = Long.valueOf(app.getSecurity().getMaxSessionTimeoutSeconds()); //in seconds
             log.debug("Found configured aplication MaxUserSessionTimeoutSeconds:{} for Application:{}", maxUserSessionFromApplication, app.getName());

@@ -27,7 +27,7 @@ public class SessionHelperTest {
     public void testUserTokenLifespanSeconds() {
         //TODO: test should be updated when implementing the ApplicationModelHelper
         List<Application> applications = ApplicationMapper.fromJsonList(ApplicationHelper.getDummyAppllicationListJson());
-        assertTrue(ApplicationModelHelper.getUserTokenLifeSpan(applications.get(0)) == 86400);
+        assertTrue(ApplicationModelHelper.getUserTokenLifeSpanInMilliSecondsFromApplication(applications.get(0)) == 86400*1000);
 
 		
 	}

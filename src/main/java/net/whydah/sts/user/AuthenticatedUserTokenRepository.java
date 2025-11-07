@@ -248,7 +248,7 @@ public class AuthenticatedUserTokenRepository {
 	private static void applyUserLifespan(UserToken userToken, long userTokenLifespan) {
 		//userToken.setLifespan(String.valueOf(applicationUserTokenLifespan));
 		if (userTokenLifespan < DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS) {
-			userToken.setLifespan(String.valueOf(userTokenLifespan * 1000));
+			userToken.setLifespan(String.valueOf(userTokenLifespan));
 		} else {
 			userToken.setLifespan(String.valueOf(DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS));
 		}
@@ -280,7 +280,7 @@ public class AuthenticatedUserTokenRepository {
 			if(customLifeSpan == 0) {
 				try {
 
-					long applicationUserTokenLifespan = ApplicationModelHelper.getUserTokenLifeSpan(applicationTokenId);
+					long applicationUserTokenLifespan = ApplicationModelHelper.getUserTokenLifeSpanInMilliSecondsFromApplicationTokenId(applicationTokenId);
 					applyUserLifespan(userToken, applicationUserTokenLifespan);
 					log.debug("addUserToken: found applicationUserTokenLifespan {} for application token Id {} - apply the lifespan (ms) to {}/{}", applicationUserTokenLifespan, applicationTokenId, userToken.getLifespan(), new UserTokenLifespan(userToken.getLifespan()).getDateFormatted());
 				} catch (Exception e) {
