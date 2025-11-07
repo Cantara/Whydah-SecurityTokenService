@@ -47,9 +47,9 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     	this.useradminservice = URI.create(uasAdminUrl);
     	
     }
-
+    
     @Override
-    public UserToken logonUser(String applicationTokenId, String appTokenXml, final String userCredentialXml) throws AuthenticationFailedException {
+    public UserToken logonUser(String applicationTokenId, String appTokenXml, final String userCredentialXml, long userTokenLifespan) throws AuthenticationFailedException {
         UserCredential userCredential = UserCredentialMapper.fromXml(userCredentialXml);
         if (userCredential != null) {
             log.trace("logonUser - Calling UserAdminService at " + useradminservice + " appTokenXml:" + appTokenXml + " userCredentialSafeXml:" + userCredential.toSafeXML());
@@ -70,19 +70,19 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
             // TODO figure out whether more fields should be copied from existing user-token, or whether we should just
             //  re-use and refresh existing token and throw away the one created from credential check.
         }
-        return AuthenticatedUserTokenRepository.addUserToken(uToken, applicationTokenId, "usertokenid");
+        return AuthenticatedUserTokenRepository.addUserToken(uToken, applicationTokenId, "usertokenid", userTokenLifespan);
     }
 
     @Override
-    public UserToken createAndLogonUser(String applicationTokenId, String appTokenXml, String userCredentialXml, String thirdpartyUserXML) throws AuthenticationFailedException {
+    public UserToken createAndLogonUser(String applicationTokenId, String appTokenXml, String userCredentialXml, String thirdpartyUserXML, long userTokenLifespan) throws AuthenticationFailedException {
         log.trace("createAndLogonUser - Calling UserAdminService at with appTokenXml:\n" + appTokenXml + "userCredentialXml:\n" + userCredentialXml + "thirdpartyUserXML:\n" + thirdpartyUserXML);
         UserToken userToken = new CommandCreateFBUser(useradminservice, appTokenXml, applicationTokenId, thirdpartyUserXML).execute();
-        return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "usertokenid");
+        return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "usertokenid", userTokenLifespan);
     }
 
 
     @Override
-    public UserToken createAndLogonPinUser(String applicationTokenId, String appTokenXml, String adminUserTokenId, String cellPhone, String pin, String userJson) {
+    public UserToken createAndLogonPinUser(String applicationTokenId, String appTokenXml, String adminUserTokenId, String cellPhone, String pin, String userJson, long userTokenLifespan) {
         if (ActivePinRepository.usePin(cellPhone, pin)) {
             try {
             	    //check if the user exists or not, better to avoid misused calls
@@ -103,7 +103,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 	            	    			UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 	            	    			userToken.setSecurityLevel("0");  
 	            	    			userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
-	            	    			return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "pin");
+	            	    			return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "pin", userTokenLifespan);
 	            	    		}
 	            	    	}
             	    }
@@ -112,7 +112,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
                 if (userToken == null) {
                     throw new AuthenticationFailedException("Pin authentication failed. Status code ");
                 } else {
-                    return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "pin");
+                    return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "pin", userTokenLifespan);
                 }
             } catch (Exception e) {
                 log.error("createAndLogonPinUser - Problems connecting to %s".formatted(useradminservice), e);
@@ -149,7 +149,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     }
 
     @Override
-    public UserToken logonPinUser(String applicationtokenid, String appTokenXml, String adminUserTokenId, String cellPhone, String pin) {
+    public UserToken logonPinUser(String applicationtokenid, String appTokenXml, String adminUserTokenId, String cellPhone, String pin, long userTokenLifespan) {
         log.info("logonPinUser() called with " + "applicationtokenid = [" + applicationtokenid + "], appTokenXml = [" + appTokenXml + "], cellPhone = [" + cellPhone + "], pin = [" + pin + "]");
         if (ActivePinRepository.usePin(cellPhone, pin)) {
             String usersQuery = cellPhone;
@@ -166,7 +166,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
                 userToken.setSecurityLevel("0");  // UserIdentity as source = securitylevel=0
                 userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
 
-                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin");
+                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin", userTokenLifespan);
 
             } else {
                 log.error("Unable to find a user matching the given phonenumber.");
@@ -247,7 +247,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
                 userToken.setSecurityLevel("0");  // UserIdentity as source = securitylevel=0
                 userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
 
-                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin");
+                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin", 0);
 
             } else {
                 log.error("Unable to find a user matching the given phonenumber.");
@@ -284,7 +284,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
                 userToken.setSecurityLevel("0");  // UserIdentity as source = securitylevel=0
                 userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
 
-                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin");
+                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin", 0);
 
             } else {
                 log.error("Unable to find a user matching the given phonenumber.");
@@ -298,7 +298,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 
 	@Override
 	public UserToken logonUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml, String adminUserTokenId,
-			String cellPhone, String secret) {
+			String cellPhone, String secret, long userTokenLifespan) {
 		log.info("logonUserUsingSharedSTSSecret() called with " + "applicationtokenid = [" + applicationtokenid + "], appTokenXml = [" + appTokenXml + "], cellPhone = [" + cellPhone + "], secrect = [" + secret + "]");
         if (AppConfig.getProperty("ssolwa_sts_shared_secrect").equals(secret)) {
             String usersQuery = cellPhone;
@@ -314,8 +314,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
                 UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
                 userToken.setSecurityLevel("2");  // UserIdentity as source = securitylevel=0
                 userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
-
-                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin");
+                
+                return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin", userTokenLifespan);
 
             } else {
                 log.error("Unable to find a user matching the given phonenumber.");

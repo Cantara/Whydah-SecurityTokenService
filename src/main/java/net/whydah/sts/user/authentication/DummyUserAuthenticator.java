@@ -1,22 +1,23 @@
 package net.whydah.sts.user.authentication;
 
-import net.whydah.sso.config.ApplicationMode;
-import net.whydah.sso.user.mappers.UserTokenMapper;
-import net.whydah.sso.user.types.UserToken;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.StringReader;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.StringReader;
+import net.whydah.sso.config.ApplicationMode;
+import net.whydah.sso.user.mappers.UserTokenMapper;
+import net.whydah.sso.user.types.UserToken;
 
 /**
  * This class is responsible for handling test and development of this module as a standalone instance, shortcutting user authentication
@@ -28,7 +29,7 @@ public class DummyUserAuthenticator implements UserAuthenticator {
     private final static DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
 
-    public UserToken logonUser(String applicationTokenId, String appTokenXml, String userCredentialXml) {
+    public UserToken logonUser(String applicationTokenId, String appTokenXml, String userCredentialXml, long usertookenLifespan) {
         if (ApplicationMode.getApplicationMode().equalsIgnoreCase(ApplicationMode.DEV)) {
             UserToken ut = null;
             try {
@@ -43,21 +44,21 @@ public class DummyUserAuthenticator implements UserAuthenticator {
         throw new IllegalStateException();
     }
 
-    public UserToken createAndLogonUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String fbUserXml) {
+    public UserToken createAndLogonUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String fbUserXml, long usertookenLifespan) {
         if (ApplicationMode.getApplicationMode().equalsIgnoreCase(ApplicationMode.DEV)) {
             return new UserToken();
         }
         throw new IllegalStateException();
     }
 
-    public UserToken createAndLogonPinUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String cellPhone, String pin, String userJson) {
+    public UserToken createAndLogonPinUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String cellPhone, String pin, String userJson, long usertookenLifespan) {
         if (ApplicationMode.getApplicationMode().equalsIgnoreCase(ApplicationMode.DEV)) {
             return new UserToken();
         }
         throw new IllegalStateException();
     }
 
-    public UserToken logonPinUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String pin){
+    public UserToken logonPinUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String pin, long usertookenLifespan){
         if (ApplicationMode.getApplicationMode().equalsIgnoreCase(ApplicationMode.DEV)) {
             return new UserToken();
         }

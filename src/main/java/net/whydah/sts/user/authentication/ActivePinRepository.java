@@ -90,6 +90,7 @@ public class ActivePinRepository {
         pin = paddPin(pin);
         String paddedPin = pin + ":" + clientid + ":" + Instant.now().toEpochMilli();
         phoneNumberAndTrustedClientIdPinMap.put(phoneNr, paddedPin);
+        phoneNumberAndTrustedClientIdMap.put(phoneNr, clientid);
         log.debug("Added pin:{}  to phone:{} for trusted client id {}", pin, phoneNr, clientid);
     }
     

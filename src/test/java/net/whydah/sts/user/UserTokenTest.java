@@ -95,7 +95,7 @@ public class UserTokenTest {
         userToken.setPersonRef("78125637812638");
 
         String apptokenId = UUID.randomUUID().toString();
-        AuthenticatedUserTokenRepository.addUserToken(userToken, apptokenId, "");
+        AuthenticatedUserTokenRepository.addUserToken(userToken, apptokenId, "", 0);
         assertTrue( AuthenticatedUserTokenRepository.verifyUserToken(userToken, apptokenId)); // "Verification of valid userToken failed");//,
 
         userToken.setFirstName("Pelle");
@@ -115,7 +115,7 @@ public class UserTokenTest {
         userToken.setPersonRef("78125637812638");
         userToken.setTimestamp(String.valueOf(System.currentTimeMillis() - 1000));
         userToken.setLifespan("0");
-        AuthenticatedUserTokenRepository.addUserToken(userToken, "", "");
+        AuthenticatedUserTokenRepository.addUserToken(userToken, "", "", 0);
         assertFalse(AuthenticatedUserTokenRepository.verifyUserToken(userToken, "")); // "Verification of timed-out userToken successful",
     }
 
@@ -423,7 +423,7 @@ public class UserTokenTest {
         utoken.setPersonRef("78125637812638");
 
         String applicationTokenId = UUID.randomUUID().toString();
-        AuthenticatedUserTokenRepository.addUserToken(utoken, applicationTokenId, "test");
+        AuthenticatedUserTokenRepository.addUserToken(utoken, applicationTokenId, "test", 0);
         assertTrue(AuthenticatedUserTokenRepository.verifyUserToken(utoken, applicationTokenId)); // "Verification of valid userToken failed",
 
         utoken.setFirstName("Pelle");
@@ -448,7 +448,7 @@ public class UserTokenTest {
         int noOfUsers = AuthenticatedUserTokenRepository.getMapSize();
         log.debug("Users:" + noOfUsers);
 
-        AuthenticatedUserTokenRepository.addUserToken(utoken, new ApplicationTokenID(UUID.randomUUID().toString()).getId(), "test");
+        AuthenticatedUserTokenRepository.addUserToken(utoken, new ApplicationTokenID(UUID.randomUUID().toString()).getId(), "test", 0);
         int noOfUsersAfter = AuthenticatedUserTokenRepository.getMapSize();
         log.debug("Users (after):" + noOfUsersAfter);
         assertTrue(noOfUsers < noOfUsersAfter);

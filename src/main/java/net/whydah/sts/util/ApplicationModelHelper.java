@@ -32,9 +32,9 @@ public class ApplicationModelHelper {
 
     public static long getUserTokenLifeSpan(Application app) {
         if (app.getSecurity() != null) {
-            long maxUserSessionFromApplication = Long.valueOf(app.getSecurity().getMaxSessionTimeoutSeconds()); //in milliseconds
+            long maxUserSessionFromApplication = Long.valueOf(app.getSecurity().getMaxSessionTimeoutSeconds()); //in seconds
             log.debug("Found configured aplication MaxUserSessionTimeoutSeconds:{} for Application:{}", maxUserSessionFromApplication, app.getName());
-            return maxUserSessionFromApplication;
+            return maxUserSessionFromApplication * 1000;
         }
         return DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS;
     }

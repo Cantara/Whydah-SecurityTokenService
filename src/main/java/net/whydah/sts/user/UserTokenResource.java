@@ -891,9 +891,11 @@ public class UserTokenResource {
 			@FormParam("adminUserTokenId") String adminUserTokenId,
 			@FormParam("apptoken") String appTokenXml,
 			@FormParam("phoneno") String phoneno,
-			@FormParam("pin") String pin) throws AppException {
+			@FormParam("pin") String pin,
+			@FormParam("userTokenLifespan") String userTokenLifespan
+			) throws AppException {
 
-		log.trace("getUserTokenByDistributedPinAndLogonUser() called with " + "applicationtokenid = [" + applicationtokenid + "], userticket = [" + userticket + "], appTokenXml = [" + appTokenXml + "], phoneno = [" + phoneno + "], pin = [" + pin + "]");
+		log.trace("getUserTokenByDistributedPinAndLogonUser() called with " + "applicationtokenid = [" + applicationtokenid + "], userticket = [" + userticket + "], appTokenXml = [" + appTokenXml + "], phoneno = [" + phoneno + "], pin = [" + pin + "], userTokenLifespan = [" + userTokenLifespan + "]");
 
 		if (isEmpty(appTokenXml) || isEmpty(pin) || isEmpty(phoneno)) {
 			//return Response.status(Response.Status.BAD_REQUEST).entity("Missing required parameters").build();
@@ -914,9 +916,12 @@ public class UserTokenResource {
 		}
 
 		try {
-			UserToken userToken = userAuthenticator.logonPinUser(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, pin);
+			UserToken userToken = userAuthenticator.logonPinUser(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, pin, userTokenLifespan == null? 0: Long.valueOf(userTokenLifespan));
+			
 			userticketmap.put(userticket, userToken.getUserTokenId());
+			
 			log.debug("getUserTokenByPinAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
+			
 			return createUserTokenResponse(applicationtokenid, userToken);
 
 		} catch (AuthenticationFailedException ae) {
@@ -1621,7 +1626,8 @@ public class UserTokenResource {
 			@PathParam("userticket") String userticket,
 			@FormParam("apptoken") String appTokenXml,
 			@FormParam("usercredential") String userCredentialXml,
-			@FormParam("userxml") String userxml) throws AppException {
+			@FormParam("userxml") String userxml,
+			@FormParam("userTokenLifespan") String userTokenLifespan) throws AppException {
 		log.trace("Response createAndLogOnUser: usercredential:" + userCredentialXml + "thirdpartyuser:" + userxml);
 
 		if (ApplicationMode.getApplicationMode() == ApplicationMode.DEV) {
@@ -1637,7 +1643,7 @@ public class UserTokenResource {
 
 		try {
 			//applicationtokenidmap.put(applicationtokenid, applicationtokenid);
-			UserToken userToken = userAuthenticator.createAndLogonUser(applicationtokenid, appTokenXml, userCredentialXml, userxml);
+			UserToken userToken = userAuthenticator.createAndLogonUser(applicationtokenid, appTokenXml, userCredentialXml, userxml, userTokenLifespan==null?0:Long.valueOf(userTokenLifespan));
 			userticketmap.put(userticket, userToken.getUserTokenId());
 			userToken.setDefcon(ThreatResource.getDEFCON());
 			userToken.setNs2link(appConfig.getProperty("myuri") + "user/" + applicationtokenid + "/validate_usertokenid/" + userToken.getUserTokenId());
@@ -1722,7 +1728,9 @@ public class UserTokenResource {
 			@FormParam("apptoken") String appTokenXml,
 			@FormParam("adminUserTokenId") String adminUserTokenId,
 			@FormParam("cellPhone") String cellPhone,
-			@FormParam("jsonuser") String newUserjson) throws AppException {
+			@FormParam("jsonuser") String newUserjson,
+			@FormParam("userTokenLifespan") String userTokenLifespan
+			) throws AppException {
 		log.info("Request createAndLogOnPinUser:  jsonuser:" + newUserjson);
 
 		if (ApplicationMode.getApplicationMode() == ApplicationMode.DEV) {
@@ -1745,7 +1753,7 @@ public class UserTokenResource {
 		}
 		try {
 
-			UserToken userToken = userAuthenticator.createAndLogonPinUser(applicationtokenid, appTokenXml, adminUserTokenId, cellPhone, pin, newUserjson);
+			UserToken userToken = userAuthenticator.createAndLogonPinUser(applicationtokenid, appTokenXml, adminUserTokenId, cellPhone, pin, newUserjson, userTokenLifespan == null? 0: Long.valueOf(userTokenLifespan));
 			userticketmap.put(userticket, userToken.getUserTokenId());
 			log.debug("createAndLogOnPinUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
 			userToken.setDefcon(ThreatResource.getDEFCON());
@@ -1920,6 +1928,8 @@ public class UserTokenResource {
 
 
 	}
+
+//HUY: this flow is unnecessary anymore. For now we only use the endpoint "get_usertoken_by_shared_secrect"
 	
 //	  This solves the problem authenticating an existing user against the 3rd party provider
 	   
@@ -2033,6 +2043,7 @@ public class UserTokenResource {
 
 	}
 
+	
 	@Path("/{applicationtokenid}/{userticket}/get_usertoken_by_trusted_client_and_logon_user")
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -2080,6 +2091,7 @@ public class UserTokenResource {
 
 	}
 	
+	
 	@Path("/{applicationtokenid}/{userticket}/get_usertoken_by_shared_secrect")
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -2090,7 +2102,8 @@ public class UserTokenResource {
 			@FormParam("adminUserTokenId") String adminUserTokenId,
 			@FormParam("apptoken") String appTokenXml,
 			@FormParam("phoneno") String phoneno,
-			@FormParam("secrect") String secrect
+			@FormParam("secrect") String secrect,
+			@FormParam("userTokenLifespan") String userTokenLifespan
 			) throws AppException {
 
 		log.trace("getUserTokenByUsingASecrect() called with " + "applicationtokenid = [" + applicationtokenid + "], userticket = [" + userticket + "], appTokenXml = [" + appTokenXml + "], phoneno = [" + phoneno + "], secrect = [" + secrect + "]");
@@ -2113,7 +2126,7 @@ public class UserTokenResource {
 		
 		
 		try {
-			UserToken userToken = userAuthenticator.logonUserUsingSharedSTSSecret(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, secrect);
+			UserToken userToken = userAuthenticator.logonUserUsingSharedSTSSecret(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, secrect, userTokenLifespan == null? 0: Long.valueOf(userTokenLifespan));
 			userticketmap.put(userticket, userToken.getUserTokenId());
 			log.debug("getUserTokenByTrustedThirdpartyClientAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
 			return createUserTokenResponse(applicationtokenid, userToken);
