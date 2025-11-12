@@ -1,6 +1,8 @@
 package net.whydah.sts.util;
 
 import net.whydah.sso.commands.adminapi.user.CommandSendSMSToUser;
+import net.whydah.sts.smsgw.SMSGatewayCommandFactory;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,24 +17,17 @@ public class DelayedSendSMSTask {
 
     Timer timer;
 
-    String smsGwServiceURL;
-    String smsGwServiceAccount;
-    String smsGwUsername;
-    String smsGwPassword;
-    String smsGwQueryParam;
     String cellNo;
     String smsMessage;
+    String tag;
     private static final Logger log = LoggerFactory.getLogger(DelayedSendSMSTask.class);
 
-    public DelayedSendSMSTask(long timestamp, String smsGwServiceURL, String smsGwServiceAccount, String smsGwUsername, String smsGwPassword, String smsGwQueryParam, String cellNo, String smsMessage) {
-        this.smsGwServiceURL = smsGwServiceURL;
-        this.smsGwServiceAccount = smsGwServiceAccount;
-        this.smsGwUsername = smsGwUsername;
-        this.smsGwPassword = smsGwPassword;
-        this.smsGwQueryParam = smsGwQueryParam;
+    public DelayedSendSMSTask(long timestamp, String cellNo, String smsMessage, String tag) {
+
         this.cellNo = cellNo;
         this.smsMessage = smsMessage;
-
+        this.tag = tag;
+        
         toolkit = Toolkit.getDefaultToolkit();
         timer = new Timer();
         long milliseconds = timestamp - new Date().getTime();
@@ -42,8 +37,9 @@ public class DelayedSendSMSTask {
 
     class RemindTask extends TimerTask {
         public void run() {
-            log.debug("Task completed. cellNo:{}   message:{}   time:{}", cellNo, smsMessage, new Date().toString());
-            new CommandSendSMSToUser(smsGwServiceURL, smsGwServiceAccount, smsGwUsername, smsGwPassword, smsGwQueryParam, cellNo, smsMessage).execute();
+            log.debug("Task completed. cellNo:{}   message:{}  time:{}", cellNo, smsMessage, new Date().toString());
+            String response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(cellNo, smsMessage, tag).execute();
+            log.trace("Answer from smsgw: " + response);
             timer.cancel();
         }
     }

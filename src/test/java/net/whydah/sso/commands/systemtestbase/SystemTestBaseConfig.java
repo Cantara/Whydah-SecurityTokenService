@@ -12,11 +12,7 @@ import net.whydah.sso.user.types.UserCredential;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sso.util.SSLTool;
 
-import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import static junit.framework.TestCase.assertNotNull;
@@ -56,22 +52,36 @@ public class SystemTestBaseConfig {
     public SystemTestBaseConfig() {
         appCredential = new ApplicationCredential(TEMPORARY_APPLICATION_ID, TEMPORARY_APPLICATION_NAME, TEMPORARY_APPLICATION_SECRET);
         userCredential = new UserCredential(userName, password);
-        Map<String, String> addToEnv = new HashMap<>();
-        addToEnv.put("IAM_MODE", "TEST");
-        setEnv(addToEnv);
+        
+        // Set IAM_MODE using system property instead of environment variable
+        // This is Java 9+ compatible
+        setIAMMode("TEST");
 
         SSLTool.disableCertificateValidation();
         setRemoteTest();
+    }
+
+    /**
+     * Set IAM_MODE using system property (Java 9+ compatible)
+     */
+    private void setIAMMode(String mode) {
+        // First check if it's already set as environment variable
+        String existingEnvMode = System.getenv("IAM_MODE");
+        if (existingEnvMode != null && !existingEnvMode.isEmpty()) {
+            System.out.println("IAM_MODE already set via environment: " + existingEnvMode);
+            return;
+        }
         
+        // Set as system property
+        System.setProperty("IAM_MODE", mode);
+        System.out.println("IAM_MODE set to: " + mode);
     }
 
     public void setRemoteTest(){
-       
-    	tokenServiceUri = URI.create("https://whydahdev.cantara.no/tokenservice/");
-    	userAdminServiceUri = URI.create("https://whydahdev.cantara.no/useradminservice/");
-    	crmServiceUri = URI.create("https://whydahdev.cantara.no/crmservice/");
-    	statisticsServiceUri = URI.create("https://whydahdev.cantara.no/reporter/");
-
+        tokenServiceUri = URI.create("https://whydahdev.cantara.no/tokenservice/");
+        userAdminServiceUri = URI.create("https://whydahdev.cantara.no/useradminservice/");
+        crmServiceUri = URI.create("https://whydahdev.cantara.no/crmservice/");
+        statisticsServiceUri = URI.create("https://whydahdev.cantara.no/reporter/");
     }
     
     public void setLocalTest(){
@@ -82,13 +92,12 @@ public class SystemTestBaseConfig {
     }
 
     public boolean isSystemTestEnabled() {
-
         try {
             if (systemTest) {
                 Thread.sleep(TIME_WAIT_BETWEEN_SYSTEMTEST);
             }
         } catch (InterruptedException ie) {
-
+            Thread.currentThread().interrupt();
         }
         return systemTest;
     }
@@ -98,21 +107,18 @@ public class SystemTestBaseConfig {
     }
 
     public boolean isCRMCustomerExtensionSystemTestEnabled() {
-
         try {
             if (CRMCustomerExtensionSystemTest) {
                 Thread.sleep(TIME_WAIT_BETWEEN_SYSTEMTEST);
             }
         } catch (InterruptedException ie) {
-
+            Thread.currentThread().interrupt();
         }
         return CRMCustomerExtensionSystemTest;
     }
 
-
     public ApplicationToken logOnSystemTestApplication() {
         if (isCRMCustomerExtensionSystemTestEnabled()) {
-            
             SSLTool.disableCertificateValidation();
             ApplicationCredential appCredential = new ApplicationCredential(TEMPORARY_APPLICATION_ID, TEMPORARY_APPLICATION_NAME, TEMPORARY_APPLICATION_SECRET);
             myAppTokenXml = new CommandLogonApplication(tokenServiceUri, appCredential).execute();
@@ -121,7 +127,6 @@ public class SystemTestBaseConfig {
             ApplicationToken appToken = ApplicationTokenMapper.fromXml(myAppTokenXml);
             assertNotNull(appToken);
             myApplicationToken = appToken;
-
             return appToken;
         }
         return null;
@@ -151,7 +156,6 @@ public class SystemTestBaseConfig {
         return null;
     }
     
-    
     public String logOnSystemTestApplicationAndSystemTestUser_getTokenXML() {
         if (isCRMCustomerExtensionSystemTestEnabled()) {
             String myApplicationTokenID = "";
@@ -173,46 +177,10 @@ public class SystemTestBaseConfig {
     }
     
     public String generatePin() {
-    	java.util.Random generator = new java.util.Random();
+        java.util.Random generator = new java.util.Random();
         generator.setSeed(System.currentTimeMillis());
         int i = generator.nextInt(10000) % 10000;
-
         java.text.DecimalFormat f = new java.text.DecimalFormat("0000");
         return f.format(i);
-
     }
-
-    protected static void setEnv(Map<String, String> newenv) {
-        try {
-            Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
-            Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
-            theEnvironmentField.setAccessible(true);
-            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
-            env.putAll(newenv);
-            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
-            theCaseInsensitiveEnvironmentField.setAccessible(true);
-            Map<String, String> cienv = (Map<String, String>) theCaseInsensitiveEnvironmentField.get(null);
-            cienv.putAll(newenv);
-        } catch (NoSuchFieldException e) {
-            try {
-                Class[] classes = Collections.class.getDeclaredClasses();
-                Map<String, String> env = System.getenv();
-                for (Class cl : classes) {
-                    if ("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
-                        Field field = cl.getDeclaredField("m");
-                        field.setAccessible(true);
-                        Object obj = field.get(env);
-                        Map<String, String> map = (Map<String, String>) obj;
-                        map.clear();
-                        map.putAll(newenv);
-                    }
-                }
-            } catch (Exception e2) {
-                e2.printStackTrace();
-            }
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
-    }
-
 }

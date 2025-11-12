@@ -1,5 +1,17 @@
 package net.whydah.sts.user;
 
+import java.io.FileNotFoundException;
+import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.glassfish.jersey.server.mvc.Viewable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.valuereporter.activity.ObservedActivity;
+import org.valuereporter.client.MonitorReporter;
+
 import com.fasterxml.jackson.databind.util.LRUMap;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
@@ -7,7 +19,13 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -23,22 +41,14 @@ import net.whydah.sts.config.DevModeHelper;
 import net.whydah.sts.errorhandling.AppException;
 import net.whydah.sts.errorhandling.AppExceptionCode;
 import net.whydah.sts.errorhandling.AuthenticationFailedException;
+import net.whydah.sts.smsgw.SMSGatewayCommandFactory;
+import net.whydah.sts.smsgw.SMSGatewayCommandFactory.SMSGatewayCommand;
+import net.whydah.sts.smsgw.SMSGatewayConfig;
 import net.whydah.sts.threat.ThreatResource;
 import net.whydah.sts.user.authentication.ActivePinRepository;
 import net.whydah.sts.user.authentication.UserAuthenticator;
 import net.whydah.sts.user.statistics.UserSessionObservedActivity;
 import net.whydah.sts.util.DelayedSendSMSTask;
-import org.glassfish.jersey.server.mvc.Viewable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.valuereporter.activity.ObservedActivity;
-import org.valuereporter.client.MonitorReporter;
-
-import java.io.FileNotFoundException;
-import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 
 @Path("/user")
@@ -57,12 +67,6 @@ public class UserTokenResource {
 	private static String failingUserTokenId = null;
 	private static java.util.Random generator = new SecureRandom();
 
-	private static final String SMS_GW_SERVICE_URL;
-	private static final String SMS_GW_SERVICE_ACCOUNT;
-	private static final String SMS_GW_USERNAME;
-	private static final String SMS_GW_PASSWORD;
-	private static final String SMS_GW_QUERY_PARAM;
-
 	public static final String GRIDPREFIX = "gridprefix";
 	
 	public static final String STS_SSOLWA_SHARED_SECRECT;
@@ -70,16 +74,15 @@ public class UserTokenResource {
 
 	static {
 
-		AppConfig appConfig = new AppConfig();
-		STS_SSOLWA_SHARED_SECRECT = appConfig.getProperty("sso_lwa_shared_secrect");
+		STS_SSOLWA_SHARED_SECRECT = AppConfig.getProperty("sso_lwa_shared_secrect");
 		// Property-overwrite of SSL verification to support weak ssl certificates
-		if ("disabled".equalsIgnoreCase(appConfig.getProperty("sslverification"))) {
+		if ("disabled".equalsIgnoreCase(AppConfig.getProperty("sslverification"))) {
 			SSLTool.disableCertificateValidation();
 
 		}
 		String xmlFileName = System.getProperty("hazelcast.config");
 		if (xmlFileName == null || xmlFileName.trim().isEmpty()) {
-			xmlFileName = appConfig.getProperty("hazelcast.config");
+			xmlFileName = AppConfig.getProperty("hazelcast.config");
 		}
 		log.info("Loading hazelcast configuration from :" + xmlFileName);
 		Config hazelcastConfig = new Config();
@@ -99,16 +102,11 @@ public class UserTokenResource {
 		} catch(Exception ex) {
 			hazelcastInstance = Hazelcast.newHazelcastInstance();
 		}
-		userticketmap = hazelcastInstance.getMap(appConfig.getProperty(GRIDPREFIX) + "userticket_map");
-		log.info("Connectiong to map {}", appConfig.getProperty(GRIDPREFIX) + "userticket_map");
+		userticketmap = hazelcastInstance.getMap(AppConfig.getProperty(GRIDPREFIX) + "userticket_map");
+		log.info("Connectiong to map {}", AppConfig.getProperty(GRIDPREFIX) + "userticket_map");
 		//applicationtokenidmap = hazelcastInstance.getMap(appConfig.getProperty(GRIDPREFIX) + "applicationtokenid_map");
 		//log.info("Connectiong to map {}", appConfig.getProperty(GRIDPREFIX) + "applicationtokenid_map");
 		
-		SMS_GW_SERVICE_URL = appConfig.getProperty("smsgw.serviceurl");  //URL https://smsgw.somewhere/../sendMessages/
-		SMS_GW_SERVICE_ACCOUNT = appConfig.getProperty("smsgw.serviceaccount");  //serviceAccount
-		SMS_GW_USERNAME = appConfig.getProperty("smsgw.username");  //smsserviceusername
-		SMS_GW_PASSWORD = appConfig.getProperty("smsgw.password");  //msservicepassword
-		SMS_GW_QUERY_PARAM = appConfig.getProperty("smsgw.queryparams");   //serviceId=serviceAccount&me...ssword=smsservicepassword
 	}
 
 
@@ -1296,11 +1294,10 @@ public class UserTokenResource {
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
 		
-		log.trace("CommandSendSMSToUser - ({}, {}, {}, {}, {}, {}, {})", SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, phoneNo, smsPin);
-		String response = new CommandSendSMSToUser(SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, phoneNo, smsPin).execute();
+		
+		String response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, smsPin).execute();
 		log.debug("Answer from smsgw: " + response);
 		ActivePinRepository.setPin(phoneNo, smsPin, response);
-
 
 		
 		return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
@@ -1368,8 +1365,7 @@ public class UserTokenResource {
 		
 		String response = null;
 		try{
-			log.trace("CommandSendSMSToUser - ({}, {}, {}, {}, {}, {}, {})", SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, phoneNo, smsPin);
-			response = new CommandSendSMSToUser(SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, phoneNo, msg).execute();
+			response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, smsPin).execute();
 			log.trace("Answer from smsgw: " + response);
 		} catch(Exception ex){
 			ex.printStackTrace();
@@ -1500,7 +1496,14 @@ public class UserTokenResource {
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
 		String cellNo = phoneNo;
-		new CommandSendSMSToUser(SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, cellNo, smsMessage).execute();
+		String response = null;
+		try{
+			response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(cellNo, smsMessage).execute();
+			log.trace("Answer from smsgw: " + response);
+		} catch(Exception ex){
+			ex.printStackTrace();
+		}
+		
 		return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 
 	}
@@ -1547,7 +1550,7 @@ public class UserTokenResource {
 			return Response.status(Response.Status.FORBIDDEN).entity(ILLEGAL_APPLICATION_FOR_THIS_SERVICE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 		}
 		String cellNo = phoneNo;
-		new DelayedSendSMSTask(Long.parseLong(timestamp), SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, cellNo, smsMessage);
+		new DelayedSendSMSTask(Long.parseLong(timestamp), cellNo, smsMessage, "sso");
 		return Response.ok().header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 
 	}
@@ -1977,14 +1980,15 @@ public class UserTokenResource {
 			msg = msg.replace("{}", smsPin);
 		}
 		
+		
 		String response = null;
 		try{
-			log.trace("CommandSendSMSToUser - ({}, {}, {}, {}, {}, {}, {})", SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, phoneNo, smsPin);
-			response = new CommandSendSMSToUser(SMS_GW_SERVICE_URL, SMS_GW_SERVICE_ACCOUNT, SMS_GW_USERNAME, SMS_GW_PASSWORD, SMS_GW_QUERY_PARAM, phoneNo, msg).execute();
+			response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, msg).execute();
 			log.trace("Answer from smsgw: " + response);
 		} catch(Exception ex){
 			ex.printStackTrace();
 		}
+		
 		if(setPin) {
 			ActivePinRepository.setPinForTrustedClient(clientId, phoneNo, smsPin);
 		}
