@@ -1365,7 +1365,7 @@ public class UserTokenResource {
 		
 		String response = null;
 		try{
-			response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, smsPin).execute();
+			response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, msg).execute();
 			log.trace("Answer from smsgw: " + response);
 		} catch(Exception ex){
 			ex.printStackTrace();
@@ -1974,6 +1974,7 @@ public class UserTokenResource {
 		if(pinFound!=null) {
 			smsPin = pinFound;
 		}
+		
 		if(msg==null || !msg.contains("{}")) {
 			msg = smsPin;
 		} else {
