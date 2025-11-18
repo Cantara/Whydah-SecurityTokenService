@@ -295,7 +295,11 @@ public class AuthenticatedUserTokenRepository {
 			} else {
 				applyUserLifespan(userToken, customLifeSpan);
 			}
-			SlackNotifications.sendToChannel("info", "New usersession established for user" + userToken.getUserName());
+            if (userToken.getUserName().contains("admin") || userToken.getUserName().contains("manager")){
+
+            } else {
+                SlackNotifications.sendToChannel("info", "New usersession established for user: " + userToken.getUserName());
+            }
 		}
 		userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
 
