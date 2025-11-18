@@ -1,11 +1,7 @@
 package net.whydah.sts.user;
 
 import java.io.FileNotFoundException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +37,9 @@ public class AuthenticatedUserTokenRepository {
 	private final static HazelcastInstance hazelcastInstance;
 	public final static long DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS;
 	//public static final long DEFAULT_USER_SESSION_TIME_IN_SECONDS;
-	public final static LogonTimeReporter logonReporter; 
+	public final static LogonTimeReporter logonReporter;
+
+    static Random random = new Random(100);
 
 	static {
 		AppConfig appConfig = new AppConfig();
@@ -298,7 +296,9 @@ public class AuthenticatedUserTokenRepository {
             if (userToken.getUserName().contains("admin") || userToken.getUserName().contains("manager")){
 
             } else {
-                SlackNotifications.sendToChannel("info", "New usersession established for user: " + userToken.getUserName());
+                if (random.nextInt(100)< 10) {  // filter out 90%
+                    SlackNotifications.sendToChannel("info", "New usersession established for user: " + userToken.getUserName());
+                }
             }
 		}
 		userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
