@@ -241,13 +241,16 @@ public class AuthenticatedUserTokenRepository {
 
 	public static void renewUserToken(String usertokenid, String applicationTokenId) {
 		UserToken userToken = activeusertokensmap.remove(usertokenid);
-		active_username_usertokenids_map.remove(userToken.getUserName());
-		userToken.setDefcon(ThreatResource.getDEFCON());
-		userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
+		if(userToken!= null) {
+			active_username_usertokenids_map.remove(userToken.getUserName());
+			userToken.setDefcon(ThreatResource.getDEFCON());
+			userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
 
-		addUserToken(userToken, applicationTokenId, "renew", false, 0);
-		ObservedActivity observedActivity = new UserSessionObservedActivity(userToken.getUid(), "userSessionRenewal", applicationTokenId);
-		MonitorReporter.reportActivity(observedActivity);
+			addUserToken(userToken, applicationTokenId, "renew", false, 0);
+			ObservedActivity observedActivity = new UserSessionObservedActivity(userToken.getUid(), "userSessionRenewal", applicationTokenId);
+			MonitorReporter.reportActivity(observedActivity);
+		}
+		
 	}
 
 	private static void applyUserLifespan(UserToken userToken, long userTokenLifespan) {
@@ -281,7 +284,7 @@ public class AuthenticatedUserTokenRepository {
 		if(authType.equalsIgnoreCase("pin")) {
 			userToken.setSecurityLevel("0");
 		}
-		
+		/*
 		boolean treatAsAdmin = userToken.getUserName().contains("admin") || userToken.getUserName().contains("manager");
 		boolean activeToken = activeusertokensmap.containsKey(userToken.getUserTokenId());
 		
@@ -310,7 +313,7 @@ public class AuthenticatedUserTokenRepository {
 	        log.debug("Slack not available - new session for user {} not notified", 
 	                 userToken.getUserName());
 	    }
-	    
+	    */
     	
 		if((isLoggingOn)) {
 			if(customLifeSpan == 0) {
@@ -364,12 +367,11 @@ public class AuthenticatedUserTokenRepository {
 	public static void removeUserToken(String userTokenId, String applicationTokenId) {
 		UserToken removedToken = activeusertokensmap.remove(userTokenId);
 		if(removedToken !=null) {
-			active_username_usertokenids_map.remove(removedToken.getUserName());	
+			active_username_usertokenids_map.remove(removedToken.getUserName());
+			ObservedActivity observedActivity = new UserSessionObservedActivity(removedToken.getUid(), "userSessionRemoved", applicationTokenId);
+			MonitorReporter.reportActivity(observedActivity);
 		}
 		
-		ObservedActivity observedActivity = new UserSessionObservedActivity(removedToken.getUid(), "userSessionRemoved", applicationTokenId);
-		MonitorReporter.reportActivity(observedActivity);
-
 	}
 
 	public static void initializeDistributedMap() {

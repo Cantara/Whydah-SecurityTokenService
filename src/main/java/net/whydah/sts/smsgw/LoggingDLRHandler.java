@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.exoreaction.notification.util.ContextMapBuilder;
 
 import jakarta.inject.Inject;
+import net.whydah.sts.slack.SlackNotifications;
 import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.user.authentication.ActivePinRepository;
 
@@ -15,8 +16,6 @@ import net.whydah.sts.user.authentication.ActivePinRepository;
 public class LoggingDLRHandler implements Target365DLRHandler {
     
     private static final Logger log = LoggerFactory.getLogger(LoggingDLRHandler.class);
-    
-    @Inject SlackNotifier slackNotifier;
     
     @Override
     public void handleDeliveryReport(Target365DeliveryReport deliveryReport) {
@@ -44,7 +43,7 @@ public class LoggingDLRHandler implements Target365DLRHandler {
         ActivePinRepository.setDLR(deliveryReport.getRecipientWithoutCountryCode(), deliveryReport.toString());
         
         //send to slack
-        slackNotifier.sendToChannel("info", "SMS delivered successfully to " + deliveryReport.getRecipient());
+        SlackNotifications.sendToChannel("info", "SMS delivered successfully to " + deliveryReport.getRecipient());
     }
     
     @Override
@@ -56,7 +55,7 @@ public class LoggingDLRHandler implements Target365DLRHandler {
                 deliveryReport.getTransactionId(),
                 deliveryReport.getCorrelationId());
         //send to slack
-        slackNotifier.sendAlarm("SMS delivery failed", ContextMapBuilder.of(
+        SlackNotifications.sendAlarm("SMS delivery failed", ContextMapBuilder.of(
         			"DLR", deliveryReport.toString()
         		));
         

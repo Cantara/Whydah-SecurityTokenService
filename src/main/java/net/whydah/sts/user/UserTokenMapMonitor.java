@@ -17,7 +17,7 @@ import net.whydah.sts.slack.SlackNotifications;
 
 /**
  * Background monitor for tracking UserToken map size changes.
- * Only runs on the Hazelcast master node to avoid duplicate notifications.
+ * Only runs when configured as master node to avoid duplicate notifications.
  * Only sends notifications when Slack is enabled and available.
  */
 public class UserTokenMapMonitor {
@@ -64,11 +64,12 @@ public class UserTokenMapMonitor {
         this.sizeChangeThreshold = getIntProperty(appConfig, 
                 "usertoken.monitor.size.change.threshold", 1);
         this.enableNotifications = getBooleanProperty(appConfig, 
-                "usertoken.monitor.notifications.enabled", true);
+                "usertoken.monitor.notifications.enabled", false);
         
         log.info("UserTokenMapMonitor configured: checkInterval={}min, reportThreshold={}min, " +
                 "sizeChangeThreshold={}, notificationsEnabled={}", 
-                checkIntervalMinutes, reportThresholdMinutes, sizeChangeThreshold, enableNotifications);
+                checkIntervalMinutes, reportThresholdMinutes, sizeChangeThreshold, 
+                enableNotifications);
     }
     
     /**
@@ -77,6 +78,12 @@ public class UserTokenMapMonitor {
     public void start() {
         if (running) {
             log.warn("UserTokenMapMonitor already running");
+            return;
+        }
+        
+        if (!enableNotifications) {
+            log.info("UserTokenMapMonitor NOT starting - this node is not configured as master");
+            log.info("To enable monitoring on this node, set: usertoken.monitor.master.node=true");
             return;
         }
         
@@ -120,43 +127,6 @@ public class UserTokenMapMonitor {
     }
     
     /**
-     * Check if this node is the Hazelcast master (oldest member).
-     */
-    private boolean isMasterNode() {
-        try {
-            if (hazelcastInstance == null || !hazelcastInstance.getLifecycleService().isRunning()) {
-                log.debug("Hazelcast instance is not running");
-                return false;
-            }
-            
-            var cluster = hazelcastInstance.getCluster();
-            var localMember = cluster.getLocalMember();
-            var members = cluster.getMembers();
-            
-            if (members.isEmpty()) {
-                return false;
-            }
-            
-            // The oldest member (first in the list) is considered the master
-            var oldestMember = members.iterator().next();
-            boolean isMaster = localMember.getUuid().equals(oldestMember.getUuid());
-            
-            if (isMaster) {
-                log.trace("This node is the Hazelcast master");
-            } else {
-                log.trace("This node is NOT the master. Master UUID: {}, Local UUID: {}", 
-                        oldestMember.getUuid(), localMember.getUuid());
-            }
-            
-            return isMaster;
-            
-        } catch (Exception e) {
-            log.error("Error checking if master node: {}", e.getMessage(), e);
-            return false;
-        }
-    }
-    
-    /**
      * Check if Slack notifications are available and enabled.
      */
     private boolean isSlackAvailable() {
@@ -168,12 +138,6 @@ public class UserTokenMapMonitor {
      */
     private void checkMapSize() {
         try {
-            // Only run on master node
-            if (!isMasterNode()) {
-                log.trace("Skipping map size check - not master node");
-                return;
-            }
-            
             // Get current size
             int newSize = activeUserTokensMap.size();
             int oldSize = currentMapSize.get();
@@ -254,7 +218,8 @@ public class UserTokenMapMonitor {
             
             SlackNotifications.sendToChannel("info", message, context, isSuccess);
             
-            log.info("Reported map size change to Slack: {} -> {}", oldSize, newSize);
+            log.info("Reported map size change to Slack: {} -> {} ({})", 
+                    oldSize, newSize, difference > 0 ? "+" + difference : difference);
             
         } catch (Exception e) {
             log.error("Failed to report size change to Slack: {}", e.getMessage(), e);
@@ -330,6 +295,7 @@ public class UserTokenMapMonitor {
         return running;
     }
     
+   
     // ============================================================================
     // Configuration Helper Methods
     // ============================================================================
