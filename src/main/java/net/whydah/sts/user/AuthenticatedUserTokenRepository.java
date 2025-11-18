@@ -286,30 +286,30 @@ public class AuthenticatedUserTokenRepository {
 		boolean activeToken = activeusertokensmap.containsKey(userToken.getUserTokenId());
 		
 		// Send notification for new user sessions (excluding admins) - only if Slack is available
-//	    if(!activeToken && !treatAsAdmin && SlackNotifications.isAvailable()) {
-//	        try {
-//	            Map<String, Object> context = new HashMap<>();
-//	            context.put("username", userToken.getUserName());
-//	            context.put("userId", userToken.getUid());
-//	            context.put("authType", authType);
-//	            context.put("securityLevel", userToken.getSecurityLevel());
-//	            context.put("applicationTokenId", applicationTokenId);
-//	            context.put("currentMapSize", activeusertokensmap.size() + 1); // +1 for the token being added
-//	            
-//	            String message = String.format("New user session established for: %s", 
-//	                                          userToken.getUserName());
-//	            
-//	            SlackNotifications.sendToChannel("info", message, context, true);
-//	            
-//	            log.info("Sent new session notification for user: {}", userToken.getUserName());
-//	            
-//	        } catch (Exception e) {
-//	            log.warn("Failed to send new session notification: {}", e.getMessage());
-//	        }
-//	    } else if (!activeToken && !treatAsAdmin) {
-//	        log.debug("Slack not available - new session for user {} not notified", 
-//	                 userToken.getUserName());
-//	    }
+	    if(!activeToken && !treatAsAdmin && SlackNotifications.isAvailable()) {
+	        try {
+	            Map<String, Object> context = new HashMap<>();
+	            context.put("username", userToken.getUserName());
+	            context.put("userId", userToken.getUid());
+	            context.put("authType", authType);
+	            context.put("securityLevel", userToken.getSecurityLevel());
+	            context.put("applicationTokenId", applicationTokenId);
+	            context.put("currentMapSize", activeusertokensmap.size() + 1); // +1 for the token being added
+	            
+	            String message = String.format("New user session established for: %s", 
+	                                          userToken.getUserName());
+	            
+	            SlackNotifications.sendToChannel("info", message, context, true);
+	            
+	            log.info("Sent new session notification for user: {}", userToken.getUserName());
+	            
+	        } catch (Exception e) {
+	            log.warn("Failed to send new session notification: {}", e.getMessage());
+	        }
+	    } else if (!activeToken && !treatAsAdmin) {
+	        log.debug("Slack not available - new session for user {} not notified", 
+	                 userToken.getUserName());
+	    }
 	    
     	
 		if((isLoggingOn)) {
@@ -363,8 +363,10 @@ public class AuthenticatedUserTokenRepository {
 
 	public static void removeUserToken(String userTokenId, String applicationTokenId) {
 		UserToken removedToken = activeusertokensmap.remove(userTokenId);
-		active_username_usertokenids_map.remove(removedToken.getUserName());
-
+		if(removedToken !=null) {
+			active_username_usertokenids_map.remove(removedToken.getUserName());	
+		}
+		
 		ObservedActivity observedActivity = new UserSessionObservedActivity(removedToken.getUid(), "userSessionRemoved", applicationTokenId);
 		MonitorReporter.reportActivity(observedActivity);
 

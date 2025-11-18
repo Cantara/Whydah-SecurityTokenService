@@ -64,10 +64,15 @@ public class ThreatResource {
         Executors.newCachedThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                HealthResource.addThreatSignal(receivedSignal);
+                
                 try {
-					String signalJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(receivedSignal);
-					slackNotifier.sendAlarm("Threat received:" + signalJson);
+                	
+                	if(receivedSignal.getSignalSeverity().equalsIgnoreCase("HIGH")) {
+                		HealthResource.addThreatSignal(receivedSignal);
+                		String signalJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(receivedSignal);
+    					slackNotifier.sendAlarm("Threat received:" + signalJson);	
+                	}
+					
                 } catch (JsonProcessingException e) {
 					e.printStackTrace();
 				}

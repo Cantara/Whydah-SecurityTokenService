@@ -1087,7 +1087,10 @@ public class UserTokenResource {
 
 		try {
 			UserToken refreshedUserToken = userAuthenticator.getRefreshedUserToken(usertokenid);
-
+			if(refreshedUserToken == null) {
+				log.warn("Unable to refresh_usertoken, usertokenid:{}", usertokenid);
+				throw AppExceptionCode.USER_AUTHENTICATION_FAILED_6000.setDeveloperMessage("Unable to get the usertoken for usertokenid" + usertokenid);
+			}
 			final UserToken userToken = AuthenticatedUserTokenRepository.refreshUserToken(applicationtokenid, refreshedUserToken);
 			log.debug("refresh_usertoken - usertoken refreshed, usertokenid={}", usertokenid);
 			return createUserTokenResponse(applicationtokenid, userToken);
@@ -1121,6 +1124,10 @@ public class UserTokenResource {
 
 		try {
 			UserToken refreshedUserToken = userAuthenticator.getRefreshedUserToken(usertoken.getUserTokenId());
+			if(refreshedUserToken == null) {
+				log.warn("Unable to refresh_usertoken, usertokenid:{}", usertoken.getUserTokenId());
+				refreshedUserToken = usertoken; 
+			}
 			final UserToken userToken = AuthenticatedUserTokenRepository.refreshUserToken(applicationtokenid, refreshedUserToken);
 			log.debug("refresh_usertoken_by_username - usertoken refreshed, usertokenid={}", userToken.getUserTokenId());
 			return createUserTokenResponse(applicationtokenid, userToken);
