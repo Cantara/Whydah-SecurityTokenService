@@ -1,5 +1,17 @@
 package net.whydah.sts.application.authentication;
 
+import static net.whydah.sso.session.WhydahApplicationSession.createThreat;
+import static net.whydah.sts.health.HealthResource.getRunningSince;
+
+import java.net.URI;
+import java.time.Instant;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.exoreaction.notification.util.ContextMapBuilder;
+
 import net.whydah.sso.application.mappers.ApplicationMapper;
 import net.whydah.sso.application.mappers.ApplicationTagMapper;
 import net.whydah.sso.application.types.Application;
@@ -11,15 +23,8 @@ import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.application.authentication.commands.CommandCheckApplicationCredentialInUAS;
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.health.HealthResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.whydah.sts.slack.SlackNotifications;
 
-import java.net.URI;
-import java.time.Instant;
-import java.util.Objects;
-
-import static net.whydah.sso.session.WhydahApplicationSession.createThreat;
-import static net.whydah.sts.health.HealthResource.getRunningSince;
 
 
 public class ApplicationAuthenticationUASClient {
@@ -60,6 +65,7 @@ public class ApplicationAuthenticationUASClient {
             }
         } catch (Exception e) {
             log.info("Unable to access UAS by Command", e);
+            SlackNotifications.handleException(e);
         }
 
         // Avoid bootstrap signalling the first 5 seconds
@@ -90,9 +96,15 @@ public class ApplicationAuthenticationUASClient {
             	}
             } else {
             	log.warn("Cannot set tags for apptoken {}, appid {}, appname {}. CommandGetApplication failed to execute", applicationToken.getApplicationTokenId(), applicationToken.getApplicationID(), applicationToken.getApplicationName());
+            	SlackNotifications.sendAlarm("addApplicationTagsFromUAS failed", 
+            			ContextMapBuilder.of("apptoken",  applicationToken.getApplicationTokenId(),
+            					"appid", applicationToken.getApplicationID(),
+            					"appname", applicationToken.getApplicationName()
+            					));
             }
         } catch (Exception e) {
             log.info("Unable to access UAS by Command", e);
+            SlackNotifications.handleException(e);
         }
 
         return applicationToken;

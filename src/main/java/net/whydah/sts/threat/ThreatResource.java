@@ -1,17 +1,26 @@
 package net.whydah.sts.threat;
 
+import java.util.concurrent.Executors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.ws.rs.*;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import net.whydah.sso.whydah.DEFCON;
 import net.whydah.sso.whydah.ThreatSignal;
 import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.health.HealthResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.Executors;
+import net.whydah.sts.slack.SlackNotifier;
 
 @Path("/threat")
 public class ThreatResource {
@@ -20,7 +29,9 @@ public class ThreatResource {
     private static String defconvalue= DEFCON.DEFCON5.toString();
     private static ThreatSignal receivedSignal;
 
-
+    @Inject
+    SlackNotifier slackNotifier;
+    
     @Path("/{applicationtokenid}/signal")
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -54,6 +65,12 @@ public class ThreatResource {
             @Override
             public void run() {
                 HealthResource.addThreatSignal(receivedSignal);
+                try {
+					String signalJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(receivedSignal);
+					slackNotifier.sendAlarm("Threat received:" + signalJson);
+                } catch (JsonProcessingException e) {
+					e.printStackTrace();
+				}
             }
         });
         return Response.ok().build();

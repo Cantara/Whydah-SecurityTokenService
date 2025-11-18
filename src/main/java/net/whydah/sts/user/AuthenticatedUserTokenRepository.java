@@ -1,10 +1,23 @@
 package net.whydah.sts.user;
 
+import java.io.FileNotFoundException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.valuereporter.activity.ObservedActivity;
+import org.valuereporter.client.MonitorReporter;
+
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+
 import net.whydah.sso.ddd.model.application.ApplicationTokenID;
 import net.whydah.sso.ddd.model.base.BaseExpires;
 import net.whydah.sso.ddd.model.sso.UserTokenLifespan;
@@ -14,18 +27,11 @@ import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.ServiceStarter;
 import net.whydah.sts.config.AppConfig;
+import net.whydah.sts.slack.SlackNotifications;
 import net.whydah.sts.threat.ThreatResource;
 import net.whydah.sts.user.statistics.UserSessionObservedActivity;
 import net.whydah.sts.util.ApplicationModelHelper;
 import net.whydah.sts.util.LogonTimeReporter;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.valuereporter.activity.ObservedActivity;
-import org.valuereporter.client.MonitorReporter;
-
-import java.io.FileNotFoundException;
-import java.util.*;
 
 public class AuthenticatedUserTokenRepository {
 	private final static Logger log = LoggerFactory.getLogger(AuthenticatedUserTokenRepository.class);
@@ -289,7 +295,7 @@ public class AuthenticatedUserTokenRepository {
 			} else {
 				applyUserLifespan(userToken, customLifeSpan);
 			}
-			
+			SlackNotifications.sendToChannel("info", "New usersession established for user" + userToken.getUserName());
 		}
 		userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
 

@@ -14,6 +14,7 @@ import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.errorhandling.AuthenticationFailedException;
+import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.user.AuthenticatedUserTokenRepository;
 import net.whydah.sts.user.UserTokenFactory;
 import net.whydah.sts.user.authentication.commands.CommandCreateFBUser;
@@ -35,6 +36,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     private URI useradminservice;
     private final AppConfig appConfig = new AppConfig();
 
+    @Inject SlackNotifier slackNotifier;
 
     @Inject
     public UserAuthenticatorImpl() {
@@ -116,6 +118,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
                 }
             } catch (Exception e) {
                 log.error("createAndLogonPinUser - Problems connecting to %s".formatted(useradminservice), e);
+                
                 throw e;
             }
         }

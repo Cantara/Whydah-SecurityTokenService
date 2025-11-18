@@ -1,10 +1,25 @@
 package net.whydah.sts.application;
 
+import java.io.FileNotFoundException;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+
+import javax.crypto.spec.IvParameterSpec;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
+
 import net.whydah.sso.application.mappers.ApplicationCredentialMapper;
 import net.whydah.sso.application.mappers.ApplicationTagMapper;
 import net.whydah.sso.application.mappers.ApplicationTokenMapper;
@@ -15,13 +30,7 @@ import net.whydah.sso.application.types.Tag;
 import net.whydah.sso.ddd.model.application.ApplicationTokenExpires;
 import net.whydah.sso.session.baseclasses.ExchangeableKey;
 import net.whydah.sts.config.AppConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.crypto.spec.IvParameterSpec;
-import java.io.FileNotFoundException;
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
+import net.whydah.sts.slack.SlackNotifications;
 
 
 public class AuthenticatedApplicationTokenRepository {
@@ -273,6 +282,7 @@ public class AuthenticatedApplicationTokenRepository {
             return applicationToken.getApplicationName();
         }
         log.error("getApplicationNameFromApplicationTokenId - Unable to find applicationName for applicationTokenId=" + applicationtokenid);
+        SlackNotifications.sendAlarm("getApplicationNameFromApplicationTokenId - Unable to find applicationName for applicationTokenId=" + applicationtokenid);
         return "";
     }
 

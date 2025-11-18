@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import net.whydah.sso.commands.adminapi.user.CommandSendSMSToUser;
 import net.whydah.sso.commands.adminapi.user.CommandSendSMSToUserTarget365;
+import net.whydah.sts.config.AppConfig;
 
 public class SMSGatewayCommandFactory {
     
@@ -104,15 +105,18 @@ public class SMSGatewayCommandFactory {
         
         // Use default tag if not provided
         String messageTag = (tag != null && !tag.isEmpty()) ? tag : config.getTarget365DefaultTag();
-        
+        String dlrUrl = AppConfig.getProperty("myuri") + "sms/dlr";
+        String correlationId = java.util.UUID.randomUUID().toString();
         return new SMSGatewayCommand(
             new CommandSendSMSToUserTarget365(
-                config.getTarget365ServiceUrl(),
-                config.getTarget365ApiKey(),
-                config.getTarget365Sender(),
-                recipientPhoneNumber,
-                messageContent,
-                messageTag
+            		config.getTarget365ServiceUrl(),
+                    config.getTarget365ApiKey(),
+                    config.getTarget365Sender(),
+                    recipientPhoneNumber,
+                    messageContent,
+                    messageTag,
+                    dlrUrl,
+                    correlationId
             ),
             "target365"
         );

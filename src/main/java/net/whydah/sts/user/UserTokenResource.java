@@ -30,7 +30,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
-import net.whydah.sso.commands.adminapi.user.CommandSendSMSToUser;
 import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserToken;
@@ -41,9 +40,8 @@ import net.whydah.sts.config.DevModeHelper;
 import net.whydah.sts.errorhandling.AppException;
 import net.whydah.sts.errorhandling.AppExceptionCode;
 import net.whydah.sts.errorhandling.AuthenticationFailedException;
+import net.whydah.sts.slack.SlackNotifications;
 import net.whydah.sts.smsgw.SMSGatewayCommandFactory;
-import net.whydah.sts.smsgw.SMSGatewayCommandFactory.SMSGatewayCommand;
-import net.whydah.sts.smsgw.SMSGatewayConfig;
 import net.whydah.sts.threat.ThreatResource;
 import net.whydah.sts.user.authentication.ActivePinRepository;
 import net.whydah.sts.user.authentication.UserAuthenticator;
@@ -1294,16 +1292,25 @@ public class UserTokenResource {
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
 		
+		try {
+			
+			String response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, smsPin).execute();
+			if(response!=null && !response.isEmpty()) {
+				log.trace("Answer from smsgw: " + response);	
+			}
+			ActivePinRepository.setPin(phoneNo, smsPin, response);
+			return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			
+		} catch (Exception ex) {
+			log.error("undexprected error", ex);
+			SlackNotifications.handleException(ex);
+			return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+		}
 		
-		String response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, smsPin).execute();
-		log.debug("Answer from smsgw: " + response);
-		ActivePinRepository.setPin(phoneNo, smsPin, response);
-
 		
-		return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
-
 	}
 
+	
 	/**
 	 * @throws AppException
 	 * @api {post} :applicationtokenid/generate_pin_and_send_sms_pin sendgenerateAndSendSMSPin
@@ -1363,21 +1370,25 @@ public class UserTokenResource {
 			msg = msg.replace("{}", smsPin);
 		}
 		
-		String response = null;
-		try{
-			response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, msg).execute();
-			log.trace("Answer from smsgw: " + response);
-		} catch(Exception ex){
-			ex.printStackTrace();
-		}
-		if(setPin) {
-			ActivePinRepository.setPin(phoneNo, smsPin, response);
-		}
-		
-		
-		
-		return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+		try {
+			String response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, msg).execute();
+			if(response!=null && !response.isEmpty()) {
+				log.trace("Answer from smsgw: " + response);	
+			}
+			
+			if(setPin) {
+				ActivePinRepository.setPin(phoneNo, smsPin, response);
+			}
+			
+			return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 
+		} catch (Exception ex) {
+			log.error("undexprected error", ex);
+			SlackNotifications.handleException(ex);
+			return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+		}
+		
+		
 	}
 
 	/**
@@ -1499,12 +1510,18 @@ public class UserTokenResource {
 		String response = null;
 		try{
 			response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(cellNo, smsMessage).execute();
-			log.trace("Answer from smsgw: " + response);
-		} catch(Exception ex){
-			ex.printStackTrace();
+			if(response!=null && !response.isEmpty()) {
+				log.trace("Answer from smsgw: " + response);	
+				ActivePinRepository.setDLR(cellNo, response);
+			}
+			return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+		} catch (Exception ex) {
+			log.error("undexprected error", ex);
+			SlackNotifications.handleException(ex);
+			return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 		}
 		
-		return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+		
 
 	}
 
@@ -1985,18 +2002,26 @@ public class UserTokenResource {
 		String response = null;
 		try{
 			response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneNo, msg).execute();
-			log.trace("Answer from smsgw: " + response);
+			if(response!=null && !response.isEmpty()) {
+				log.trace("Answer from smsgw: " + response);
+				ActivePinRepository.setDLR(phoneNo, response);
+			}
+			
+			if(setPin) {
+				ActivePinRepository.setPinForTrustedClient(clientId, phoneNo, smsPin);
+			}
+			
+			
+			
+			return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			
 		} catch(Exception ex){
-			ex.printStackTrace();
+			log.error("undexprected error", ex);
+			SlackNotifications.handleException(ex);
+			return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 		}
 		
-		if(setPin) {
-			ActivePinRepository.setPinForTrustedClient(clientId, phoneNo, smsPin);
-		}
 		
-		
-		
-		return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 
 	}
 	

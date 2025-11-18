@@ -1,24 +1,29 @@
 package net.whydah.sts.user.authentication;
 
 
-import com.hazelcast.config.Config;
-import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import net.whydah.sts.config.AppConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.exoreaction.notification.util.ContextMapBuilder;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.XmlConfigBuilder;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+
+import net.whydah.sts.config.AppConfig;
+import net.whydah.sts.slack.SlackNotifier;
+import net.whydah.sts.util.HK2ServiceLocator;
+
 public class ActivePinRepository {
     private final static Logger log = LoggerFactory.getLogger(ActivePinRepository.class);
     private static Map<String, String> pinMap;
     private static Map<String, String> smsResponseLogMap;
-
+   
 
 //	  This solves the problem authenticating an existing user against the 3rd party provider
    
@@ -72,6 +77,7 @@ public class ActivePinRepository {
         	}
         });
     
+        
     }
 
     public static void setPin(String phoneNr, String pin, String smsResponse) {
@@ -81,10 +87,17 @@ public class ActivePinRepository {
         String paddedPin = pin + ":" + Instant.now().toEpochMilli();
         pinMap.put(phoneNr, paddedPin);
         log.debug("added pin:{}  to phone:{} ", paddedPin, phoneNr);
-        if(smsResponse!=null){
+        if(smsResponse!=null && !smsResponse.isEmpty()){
         	smsResponseLogMap.put(phoneNr, smsResponse);
         }
     }
+
+    public static void setDLR(String phoneNr, String dlr) {
+        if(dlr!=null && !dlr.isEmpty()){
+        	smsResponseLogMap.put(phoneNr, dlr);
+        }
+    }
+    
     
     public static void setPinForTrustedClient(String clientid, String phoneNr, String pin) {
         pin = paddPin(pin);
@@ -184,6 +197,7 @@ public class ActivePinRepository {
     }
 
     private static boolean isValidPin(String phoneNr, String pin) {
+    	SlackNotifier slackNotifier = HK2ServiceLocator.getService(SlackNotifier.class);
         try {
             pin = paddPin(pin);
             String storedPin = pinMap.get(phoneNr);
@@ -207,15 +221,37 @@ public class ActivePinRepository {
             }
 
             log.warn("Illegal pin logon attempted. phone: {} invalid pin attempted:{}", phoneNr, pin);
+            
+            
+            if(slackNotifier!=null) {
+            	slackNotifier.sendAlarm("Illegal pin logon attempted.", ContextMapBuilder.of(
+            			"phone", phoneNr,
+            			"submitted_pin", pin,
+            			"stored_pin", storedPin
+            			));
+            }
+            
             return false;
         } catch (Exception e) {
             log.error("Exception in isValidPin.  phoneNo:" + phoneNr + "-pin:" + pin, e);
+            if(slackNotifier!=null) {
+            	slackNotifier.handleException(e, "isValidPin", ContextMapBuilder.of(
+            			"phone", phoneNr,
+            			"submitted_pin", pin
+            			));
+            	
+            	return false;
+            	
+            } else {
+            	throw e;	
+            }
         }
-        return false;
     }
     
     private static boolean isValidPinForTrustedClient(String clientId, String phoneNr, String pin) {
+    	SlackNotifier slackNotifier = HK2ServiceLocator.getService(SlackNotifier.class);
         try {
+        	
             pin = paddPin(pin);
             String found = phoneNumberAndTrustedClientIdPinMap.get(phoneNr);
             log.debug("isValidPinForTrustedClient on lookup returned storedpin:{}, for phone:{} for clienid:{}", found, phoneNr, clientId);
@@ -241,11 +277,30 @@ public class ActivePinRepository {
             }
 
             log.warn("Illegal pin logon attempted. phone: {} invalid pin attempted:{}", phoneNr, pin);
+            
+            if(slackNotifier!=null) {
+            	slackNotifier.sendAlarm("Illegal pin logon attempted.", ContextMapBuilder.of(
+            			"phone", phoneNr,
+            			"submitted_pin", pin,
+            			"stored_pin", storedPin
+            			));
+            }
+            
             return false;
         } catch (Exception e) {
             log.error("Exception in isValidPinForTrustedClient.  phoneNo:" + phoneNr + "-pin:" + pin + "-clientid:" + clientId , e);
+            if(slackNotifier!=null) {
+            	slackNotifier.handleException(e, "isValidPinForTrustedClient", ContextMapBuilder.of(
+            			"phone", phoneNr,
+            			"submitted_pin", pin
+            			));
+            	
+            	return false;
+            	
+            } else {
+            	throw e;	
+            }
         }
-        return false;
     }
     
     public static boolean isTrustedClientRegistered(String clientId, String phoneNumber) {

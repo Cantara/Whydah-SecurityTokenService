@@ -1,10 +1,35 @@
 package net.whydah.sts.application;
 
+import static net.whydah.sso.util.LoggerUtil.first50;
+import static net.whydah.sts.application.AuthenticatedApplicationTokenRepository.DEFAULT_APPLICATION_SESSION_EXTENSION_TIME_IN_SECONDS;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.glassfish.jersey.server.mvc.Viewable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.exoreaction.notification.util.ContextMapBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import net.whydah.sso.application.helpers.ApplicationCredentialHelper;
@@ -26,19 +51,9 @@ import net.whydah.sts.application.authentication.ApplicationAuthenticationUASCli
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.errorhandling.AppException;
 import net.whydah.sts.errorhandling.AppExceptionCode;
-import net.whydah.sts.errorhandling.AuthenticationFailedException;
+import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.user.AuthenticatedUserTokenRepository;
 import net.whydah.sts.user.authentication.UserAuthenticator;
-import org.glassfish.jersey.server.mvc.Viewable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static net.whydah.sso.util.LoggerUtil.first50;
-import static net.whydah.sts.application.AuthenticatedApplicationTokenRepository.DEFAULT_APPLICATION_SESSION_EXTENSION_TIME_IN_SECONDS;
 
 @Path("/")
 public class ApplicationResource {
@@ -55,6 +70,8 @@ public class ApplicationResource {
     @Inject
     private UserAuthenticator userAuthenticator;
 
+    @Inject
+    private SlackNotifier slackNotifier;
 
     @GET
     @Produces(MediaType.TEXT_HTML)
@@ -162,15 +179,6 @@ public class ApplicationResource {
         }
         try {
            
-//            if(appCredentialXml.contains("2215")) {
-//            	applicationToken.setBaseuri(appConfig.getProperty("myuri"));
-//                applicationToken.setExpires(String.valueOf(new ApplicationTokenExpires(DEFAULT_APPLICATION_SESSION_EXTENSION_TIME_IN_SECONDS * 1000).getValue()));
-//                AuthenticatedApplicationTokenRepository.addApplicationToken(applicationToken);
-//                String applicationTokenXml = ApplicationTokenMapper.toXML(applicationToken);
-//                log.trace("logonApplication returns applicationTokenXml={}", applicationTokenXml);
-//                return Response.ok().entity(applicationTokenXml).header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT").build();
-//            }
-            
         	 ApplicationToken applicationToken = ApplicationTokenMapper.fromApplicationCredentialXML(appCredentialXml);
         	 if (applicationToken.getApplicationName() == null || applicationToken.getApplicationName().length() < 1) {
                  log.warn("Old Whydah ApplicationCredential received, please inform application owner to update the ApplicationCredential. ApplicationCredential:" + appCredentialXml);
@@ -190,42 +198,13 @@ public class ApplicationResource {
              String applicationTokenXml = ApplicationTokenMapper.toXML(applicationToken);
              log.trace("logonApplication returns applicationTokenXml={}", applicationTokenXml);
              return Response.ok().entity(applicationTokenXml).header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT").build();
-        
-            
-            /*
-            //only do update tags if we have UAS/UIB activated
-            if( AuthenticatedApplicationTokenRepository.getUASApplicationToken()!=null && 
-            		AuthenticatedApplicationTokenRepository.getUIBApplicationToken()!=null
-            		) {
-            	//add application token since UIB/UIB activated
-            	AuthenticatedApplicationTokenRepository.addApplicationToken(applicationToken); 
-            	//update tags for apps except UAS/UIB
-            	if(!"2212, 2210".contains( applicationToken.getApplicationID())) {
-            		log.info("UAS activated with app token {}", AuthenticatedApplicationTokenRepository.getUASApplicationToken());
-            		log.info("UIB activated with app token {}", AuthenticatedApplicationTokenRepository.getUIBApplicationToken());
-            		log.info("Preparing update tags for app token {} - app name {}", applicationToken.getApplicationTokenId() , applicationToken.getApplicationName());
-            		applicationToken = updateWithTags(applicationToken); // TODO more than just updating tags could be done here as we are fetching full application xml
-            		AuthenticatedApplicationTokenRepository.addApplicationToken(applicationToken); // add updated application-token with tags
-            	}
-            } else {
-            	if("2212, 2210".contains( applicationToken.getApplicationID())) {
-            		 AuthenticatedApplicationTokenRepository.addApplicationToken(applicationToken); 
-            	} else {
-            		//will fail because UAS/UIB has not activated just yet
-            		log.warn("Logon called for app {} but UAS/UIB has not etablished yet.", applicationToken);
-            		throw AppExceptionCode.MISC_INTERNAL_ERROR_PARAMS_9999.addMessageParams("Service is not ready for logon just yet.");
-            	}
-            }
-            */
-            
-            
-            
             
             
         } catch (Exception e) {
             log.error("Something went really wrong here", e);
+            slackNotifier.handleException(e);
+            throw AppExceptionCode.APP_ILLEGAL_7000;
         }
-        throw AppExceptionCode.APP_ILLEGAL_7000;
     }
 
     /**
@@ -595,6 +574,7 @@ public class ApplicationResource {
             }
         } catch (Exception e) {
             log.error("Error in verifyApplicationCredentialAgainstLocalAndUAS_UIB.", e);
+            slackNotifier.handleException(e);
             return false;
         }
     }
@@ -612,15 +592,16 @@ public class ApplicationResource {
             	if(whydahUserAdminUserToken!=null) {
                 	return ApplicationAuthenticationUASClient.addApplicationTagsFromUAS(applicationToken, whydahUserAdminUserToken);
                 }
-            } catch(AuthenticationFailedException ex) {
+            } catch(Exception ex) {
             	ex.printStackTrace();
+            	slackNotifier.handleException(ex);
             }
         }
         return applicationToken;
     }
 
 
-    private static boolean handleCryptoKey(ApplicationToken applicationToken) {
+    private boolean handleCryptoKey(ApplicationToken applicationToken) {
         ExchangeableKey lookupKey = AuthenticatedApplicationTokenRepository.getExchangeableKeyForApplicationToken(applicationToken);
         log.debug("Lookup cryptokey for Applicationid:{} for ApplicationTokenId:{} resulted in ExchangeableKey:{}", applicationToken.getApplicationID(), applicationToken.getApplicationTokenId(), lookupKey);
         if (lookupKey == null) {
@@ -639,6 +620,9 @@ public class ApplicationResource {
             }
         } catch (Exception e) {
             log.warn("Unable to use encryption", e);
+            slackNotifier.handleExceptionAsWarning(e, "handleCryptoKey", "Unable to use encryption", 
+            		ContextMapBuilder.of("applicationId", applicationToken.getApplicationID(),
+            							"applicationName", applicationToken.getApplicationName()));
         }
         return false;
     }
