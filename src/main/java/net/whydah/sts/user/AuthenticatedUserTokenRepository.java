@@ -38,7 +38,8 @@ public class AuthenticatedUserTokenRepository {
 	public final static long DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS;
 	//public static final long DEFAULT_USER_SESSION_TIME_IN_SECONDS;
 	public final static LogonTimeReporter logonReporter;
-
+	private static UserTokenMapMonitor mapMonitor;
+    
     static Random random = new Random(100);
 
 	static {
@@ -271,7 +272,7 @@ public class AuthenticatedUserTokenRepository {
 		return addUserToken(userToken, applicationTokenId, authType, true, customLifespan);
 	}
 
-	private static UserToken addUserToken(UserToken userToken, String applicationTokenId, String authType, boolean isNewAdding, long customLifeSpan) {
+	private static UserToken addUserToken(UserToken userToken, String applicationTokenId, String authType, boolean isLoggingOn, long customLifeSpan) {
 
 		if (!UserTokenId.isValid(userToken.getUserTokenId())) {
 			log.error("Error: UserToken has no valid usertokenid, generating new userTokenId");
@@ -280,10 +281,40 @@ public class AuthenticatedUserTokenRepository {
 		if(authType.equalsIgnoreCase("pin")) {
 			userToken.setSecurityLevel("0");
 		}
-		if(isNewAdding) {
+		
+		boolean treatAsAdmin = userToken.getUserName().contains("admin") || userToken.getUserName().contains("manager");
+		boolean activeToken = activeusertokensmap.containsKey(userToken.getUserTokenId());
+		
+		// Send notification for new user sessions (excluding admins) - only if Slack is available
+	    if(!activeToken && !treatAsAdmin && SlackNotifications.isAvailable()) {
+	        try {
+	            Map<String, Object> context = new HashMap<>();
+	            context.put("username", userToken.getUserName());
+	            context.put("userId", userToken.getUid());
+	            context.put("authType", authType);
+	            context.put("securityLevel", userToken.getSecurityLevel());
+	            context.put("applicationTokenId", applicationTokenId);
+	            context.put("currentMapSize", activeusertokensmap.size() + 1); // +1 for the token being added
+	            
+	            String message = String.format("New user session established for: %s", 
+	                                          userToken.getUserName());
+	            
+	            SlackNotifications.sendToChannel("info", message, context, true);
+	            
+	            log.info("Sent new session notification for user: {}", userToken.getUserName());
+	            
+	        } catch (Exception e) {
+	            log.warn("Failed to send new session notification: {}", e.getMessage());
+	        }
+	    } else if (!activeToken && !treatAsAdmin) {
+	        log.debug("Slack not available - new session for user {} not notified", 
+	                 userToken.getUserName());
+	    }
+	    
+    	
+		if((isLoggingOn)) {
 			if(customLifeSpan == 0) {
 				try {
-
 					long applicationUserTokenLifespan = ApplicationModelHelper.getUserTokenLifeSpanInMilliSecondsFromApplicationTokenId(applicationTokenId);
 					applyUserLifespan(userToken, applicationUserTokenLifespan);
 					log.debug("addUserToken: found applicationUserTokenLifespan {} for application token Id {} - apply the lifespan (ms) to {}/{}", applicationUserTokenLifespan, applicationTokenId, userToken.getLifespan(), new UserTokenLifespan(userToken.getLifespan()).getDateFormatted());
@@ -293,14 +324,8 @@ public class AuthenticatedUserTokenRepository {
 			} else {
 				applyUserLifespan(userToken, customLifeSpan);
 			}
-            if (userToken.getUserName().contains("admin") || userToken.getUserName().contains("manager")){
-
-            } else {
-                if (random.nextInt(100)< 10) {  // filter out 90%
-                    SlackNotifications.sendToChannel("info", "New usersession established for user: " + userToken.getUserName());
-                }
-            }
 		}
+		
 		userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
 
 
@@ -346,7 +371,20 @@ public class AuthenticatedUserTokenRepository {
 	}
 
 	public static void initializeDistributedMap() {
+		if (mapMonitor == null) {
+            mapMonitor = new UserTokenMapMonitor(hazelcastInstance, activeusertokensmap);
+            mapMonitor.start();
+            log.info("UserTokenMapMonitor started");
+        }
 	}
+
+	public static void shutdownMonitor() {
+		if (mapMonitor != null) {
+			mapMonitor.stop();
+			log.info("UserTokenMapMonitor stopped");
+		}
+	}
+
 
 	public static int getMapSize() {
 		logUserTokenMap();

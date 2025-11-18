@@ -14,6 +14,7 @@ import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.errorhandling.AuthenticationFailedException;
+import net.whydah.sts.slack.SlackNotifications;
 import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.user.AuthenticatedUserTokenRepository;
 import net.whydah.sts.user.UserTokenFactory;
@@ -22,6 +23,8 @@ import net.whydah.sts.user.authentication.commands.CommandCreatePinUser;
 import net.whydah.sts.user.authentication.commands.CommandVerifyUserCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.exoreaction.notification.util.ContextMapBuilder;
 
 import jakarta.inject.Inject;
 
@@ -97,7 +100,23 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 	            	    		//check against UAS
 	            	    		String usersQuery = cellPhone;
 	            	    		String usersJson = new CommandListUsers(useradminservice, applicationTokenId, adminUserTokenId, usersQuery).execute();
-	            	    		log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+	            	    		
+	            	    		if (usersJson == null) {
+	            	            	log.error("Unable to find any user from the query " + usersQuery);
+	            	            	slackNotifier.sendAlarm("Unable to find any users from the CommandListUsers for the query " + usersQuery, 
+	            	            			ContextMapBuilder.of(
+	            	            					"location", "createAndLogonPinUser  method",
+	            	            					"applicationtokenid", applicationTokenId, 
+	            	            					"cellphone", cellPhone 
+	            	            			));
+	            	            	
+	            	            	throw new Exception("Unexpected exception occured. We unable to find a user from the query " + usersQuery);
+	            	            	 
+	            	            } else {
+	            	            	log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+	            	            }
+	            	    		
+	            	    	
 	            	    		UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
 	            	    		if (userTokenIdentity != null) {
 	            	    			log.info("Found matching UserIdentity {}", userTokenIdentity);
@@ -118,8 +137,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
                 }
             } catch (Exception e) {
                 log.error("createAndLogonPinUser - Problems connecting to %s".formatted(useradminservice), e);
-                
-                throw e;
+                throw new AuthenticationFailedException("Unable to find a user matching the given phonenumber.");
             }
         }
         throw new AuthenticationFailedException("Pin authentication failed. Status code ");
@@ -158,7 +176,25 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
             String usersQuery = cellPhone;
             // produserer userJson. denne kan inneholde fler users dette er json av
             String usersJson = new CommandListUsers(useradminservice, applicationtokenid, adminUserTokenId, usersQuery).execute();
-            log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+           
+            if (usersJson == null) {
+            	log.error("Unable to find a user matching the given phonenumber.");
+            	
+            	slackNotifier.sendAlarm("Unable to find any user from the query " + usersQuery, 
+            			ContextMapBuilder.of(
+            					"location", "logonPinUser  method",
+            					"applicationtokenid", applicationtokenid, 
+            					"cellphone", cellPhone 
+            			));
+            	
+            	throw new AuthenticationFailedException("Unexpected exception occured. We unable to find a user from the query " + usersQuery);
+            	 
+            } else {
+            	log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+            }
+            
+            
+            
             UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
             if (userTokenIdentity != null) {
                 log.info("Found matching UserIdentity {}", userTokenIdentity);
@@ -197,6 +233,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
     private UserToken getFirstMatch(String usersJson, String cellPhone) {
         log.info("Searching for: ", cellPhone);
         log.info("Searching in: ", usersJson);
+        
         List<UserToken> userTokens = UserTokenFactory.fromUsersIdentityJson(usersJson);
         // First lets find complete matches
         for (UserToken userIdentity : userTokens) {
@@ -239,7 +276,24 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
             String usersQuery = cellPhone;
             // produserer userJson. denne kan inneholde fler users dette er json av
             String usersJson = new CommandListUsers(useradminservice, applicationtokenid, adminUserTokenId, usersQuery).execute();
-            log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+            
+            
+            if (usersJson == null) {
+            	log.error("Unable to find a user matching the given phonenumber.");
+            	
+            	slackNotifier.sendAlarm("Unable to find any user from the query " + usersQuery, 
+            			ContextMapBuilder.of(
+            					"location", "logonWithTrustedUser  method",
+            					"applicationtokenid", applicationtokenid, 
+            					"cellphone", cellPhone 
+            			));
+            	
+            	throw new AuthenticationFailedException("Unexpected exception occured. We unable to find a user from the query " + usersQuery);
+            	 
+            } else {
+            	log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+            }
+            
             UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
             if (userTokenIdentity != null) {
                 log.info("Found matching UserIdentity {}", userTokenIdentity);
@@ -276,7 +330,23 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
             String usersQuery = cellPhone;
             
             String usersJson = new CommandListUsers(useradminservice, applicationtokenid, adminUserTokenId, usersQuery).execute();
-            log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+          
+            if (usersJson == null) {
+            	log.error("Unable to find a user matching the given phonenumber.");
+            	
+            	slackNotifier.sendAlarm("Unable to find any user from the query " + usersQuery, 
+            			ContextMapBuilder.of(
+            					"location", "logonPinUserForTrustedUser  method",
+            					"applicationtokenid", applicationtokenid, 
+            					"cellphone", cellPhone 
+            			));
+            	
+            	throw new AuthenticationFailedException("Unexpected exception occured. We unable to find a user from the query " + usersQuery);
+            	 
+            } else {
+            	log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+            }
+          
             UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
             if (userTokenIdentity != null) {
                 log.info("Found matching UserIdentity {}", userTokenIdentity);
@@ -307,7 +377,23 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
             String usersQuery = cellPhone;
             
             String usersJson = new CommandListUsers(useradminservice, applicationtokenid, adminUserTokenId, usersQuery).execute();
-            log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+            
+            if (usersJson == null) {
+            	log.error("Unable to find a user matching the given phonenumber.");
+            	
+            	slackNotifier.sendAlarm("Unable to find any user from the query " + usersQuery, 
+            			ContextMapBuilder.of(
+            					"location", "logonUserUsingSharedSTSSecret  method",
+            					"applicationtokenid", applicationtokenid, 
+            					"cellphone", cellPhone 
+            			));
+            	
+            	throw new AuthenticationFailedException("Unexpected exception occured. We unable to find a user from the query " + usersQuery);
+            	 
+            } else {
+            	log.info("CommandListUsers for query {} found users {}", usersQuery, usersJson);
+            }
+            
             UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
             if (userTokenIdentity != null) {
                 log.info("Found matching UserIdentity {}", userTokenIdentity);

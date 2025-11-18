@@ -234,6 +234,14 @@ public class ServiceStarter {
     public void stop() {
         log.info("Stopping SecurityTokenService...");
         
+        // Stop UserToken map monitor
+        try {
+            AuthenticatedUserTokenRepository.shutdownMonitor();
+        } catch (Exception e) {
+            log.error("Error shutting down UserTokenMapMonitor", e);
+        }
+        
+        // Shutdown Slack notification service
         if (appBinder != null) {
             try {
                 appBinder.shutdown();
@@ -242,6 +250,7 @@ public class ServiceStarter {
             }
         }
         
+        // Shutdown HTTP server
         if (httpServer != null) {
             try {
                 httpServer.shutdownNow();

@@ -92,7 +92,13 @@ public class SlackNotifications {
 		}
     }
     
-
+    public static boolean isAvailable() {
+    	SlackNotifier sn = HK2ServiceLocator.getService(SlackNotifier.class);
+		if(sn!=null) {
+			return sn.isAvailable();
+		}
+		return false;
+    }
 
 
 
