@@ -3,6 +3,8 @@ package net.whydah.sts.user.authentication;
 import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import org.slf4j.Logger;
@@ -28,6 +30,9 @@ public class ActivePinRepository {
     
     // Track PIN usage for security alerts
     private static Map<String, Integer> pinUsageCountMap;
+    
+    // Configurable threshold for security alerts
+    private static final int SECURITY_ALERT_THRESHOLD = 5;
     
     static {
         AppConfig appConfig = new AppConfig();
@@ -62,6 +67,7 @@ public class ActivePinRepository {
         
         log.info("Connecting to map {}",appConfig.getProperty("gridprefix")+"pinMap");
         log.info("Loaded pin-Map size=" + pinMap.size());
+        log.info("Security alert threshold set to {} uses", SECURITY_ALERT_THRESHOLD);
         
         // Safe cleanup of invalid entries
         Set<String> invalidKeys = new HashSet<>();
@@ -148,7 +154,7 @@ public class ActivePinRepository {
 
     /**
      * Validate and use PIN - allows reuse within 5-minute window
-     * Sends Norwegian security alert on each successful authentication
+     * Sends Norwegian security alert only after threshold (5+ uses)
      */
     public static boolean usePin(String phoneNr, String pin) {
         pin = paddPin(pin);
@@ -180,15 +186,19 @@ public class ActivePinRepository {
             return false;
         }
         
-        // ✅ PIN is valid - track usage and send security alert
+        // ✅ PIN is valid - track usage
         Integer usageCount = pinUsageCountMap.getOrDefault(phoneNr, 0);
         usageCount++;
         pinUsageCountMap.put(phoneNr, usageCount);
         
         log.info("usePin - Valid pin used (usage #{}) for phone: {}", usageCount, phoneNr);
         
-        // Send Norwegian security notification
-        sendNorwegianSecurityAlert(phoneNr, usageCount);
+        // ✅ Send Norwegian security alert only if usage >= threshold
+        if (usageCount >= SECURITY_ALERT_THRESHOLD) {
+            sendNorwegianSecurityAlert(phoneNr, usageCount);
+        } else {
+            log.debug("PIN usage count {} below threshold {} - no alert sent", usageCount, SECURITY_ALERT_THRESHOLD);
+        }
         
         // ✅ Keep PIN valid for 5 minutes - don't remove
         return true;
@@ -196,32 +206,68 @@ public class ActivePinRepository {
     
     /**
      * Send Norwegian security alert SMS
+     * Only called when usage count >= SECURITY_ALERT_THRESHOLD
      */
     private static void sendNorwegianSecurityAlert(String phoneNr, int usageCount) {
         try {
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
             String message;
-            if (usageCount == 1) {
-                message = "Din konto ble åpnet. Hvis dette ikke var deg, kontakt support umiddelbart.";
-            } else {
+            
+            if (usageCount == SECURITY_ALERT_THRESHOLD) {
+                // First alert - inform user of suspicious activity
                 message = String.format(
-                    "Din konto ble åpnet for %d. gang. Hvis dette ikke var deg, kontakt support umiddelbart.", 
+                    "SIKKERHETSVARSLING: Din konto har blitt åpnet %d ganger siden kl %s. " +
+                    "Hvis dette ikke var deg, kontakt support umiddelbart.", 
+                    usageCount, timestamp
+                );
+            } else {
+                // Subsequent alerts - more urgent
+                message = String.format(
+                    "ADVARSEL: Din konto har nå blitt åpnet %d ganger. " +
+                    "Hvis dette ikke var deg, kontakt support NÅ!", 
                     usageCount
                 );
             }
             
-            log.info("Sending Norwegian security alert to {}: {}", phoneNr, message);
+            log.warn("Sending Norwegian security alert to {} (usage: {}): {}", phoneNr, usageCount, message);
             
             String response = SMSGatewayCommandFactory.getInstance()
                 .createSendSMSCommand(phoneNr, message)
                 .execute();
             
             if (response != null && !response.isEmpty()) {
-                log.debug("Security alert SMS response: {}", response);
+                log.info("Security alert SMS sent successfully: {}", response);
                 setDLR(phoneNr, "SECURITY_ALERT_" + usageCount + ": " + response);
             }
+            
+            // Also send Slack alert for monitoring
+            sendSlackSecurityAlert(phoneNr, usageCount);
+            
         } catch (Exception e) {
             log.error("Failed to send Norwegian security alert to {}", phoneNr, e);
             // Don't fail authentication if SMS fails
+        }
+    }
+    
+    /**
+     * Send Slack alert for internal monitoring
+     */
+    private static void sendSlackSecurityAlert(String phoneNr, int usageCount) {
+        try {
+            SlackNotifier slackNotifier = HK2ServiceLocator.getService(SlackNotifier.class);
+            if (slackNotifier != null) {
+                slackNotifier.sendAlarm(
+                    "High PIN reuse detected", 
+                    ContextMapBuilder.of(
+                        "phone", phoneNr,
+                        "usage_count", String.valueOf(usageCount),
+                        "threshold", String.valueOf(SECURITY_ALERT_THRESHOLD),
+                        "severity", usageCount >= 10 ? "HIGH" : "MEDIUM"
+                    )
+                );
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send Slack security alert", e);
         }
     }
     
@@ -299,6 +345,13 @@ public class ActivePinRepository {
     }
     
     /**
+     * Get current usage count for a phone number
+     */
+    public static int getPinUsageCount(String phoneNr) {
+        return pinUsageCountMap.getOrDefault(phoneNr, 0);
+    }
+    
+    /**
      * Clean up expired PINs and reset usage counters
      * Should be called periodically
      */
@@ -325,5 +378,19 @@ public class ActivePinRepository {
         if (!expiredKeys.isEmpty()) {
             log.info("Cleaned up {} expired PINs", expiredKeys.size());
         }
+    }
+    
+    /**
+     * Get statistics for monitoring
+     */
+    public static Map<String, Object> getPinStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("active_pins", pinMap.size());
+        stats.put("pins_above_threshold", pinUsageCountMap.values().stream()
+            .filter(count -> count >= SECURITY_ALERT_THRESHOLD).count());
+        stats.put("max_usage_count", pinUsageCountMap.values().stream()
+            .max(Integer::compareTo).orElse(0));
+        stats.put("total_active_sessions", pinUsageCountMap.size());
+        return stats;
     }
 }
