@@ -82,6 +82,21 @@ public class AuthenticatedUserTokenRepository {
 		DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS = updateDefaultUserSessionExtensionTime(appConfig);
 
 	}
+	
+	 /**
+     * Get the Hazelcast instance (for use by other components).
+     */
+    public static HazelcastInstance getHazelcastInstance() {
+        return hazelcastInstance;
+    }
+    
+    /**
+     * Get the grid prefix (for use by other components).
+     */
+    public static String getGridPrefix() {
+        AppConfig appConfig = new AppConfig();
+        return appConfig.getProperty("gridprefix");
+    }
 
 	protected static long updateDefaultUserSessionExtensionTime(AppConfig appConfig) {
 		long userSessionExtensionTime = 0;

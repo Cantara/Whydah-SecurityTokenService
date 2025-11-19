@@ -31,6 +31,7 @@ import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.config.ServiceLocatorInitializationFilter;
 import net.whydah.sts.health.HealthResource;
 import net.whydah.sts.slack.AppLifecycleNotifier;
+import net.whydah.sts.smsgw.LoggingDLRHandler;
 import net.whydah.sts.smsgw.Target365DLRResource;
 import net.whydah.sts.threat.ThreatResource;
 import net.whydah.sts.user.AuthenticatedUserTokenRepository;
@@ -204,9 +205,12 @@ public class ServiceStarter {
 
         httpServer.start();
 
-        // Initialize Hazelcast distributed token map
         AuthenticatedUserTokenRepository.initializeDistributedMap();
-
+        LoggingDLRHandler.initializeMonitor(
+                AuthenticatedUserTokenRepository.getHazelcastInstance(),
+                AuthenticatedUserTokenRepository.getGridPrefix()
+            );
+        
         log.info("================================================================================");
         log.info("SecurityTokenService started successfully");
         log.info("================================================================================");

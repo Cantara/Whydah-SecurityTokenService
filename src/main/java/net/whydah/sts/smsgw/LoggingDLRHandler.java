@@ -1,21 +1,67 @@
 package net.whydah.sts.smsgw;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exoreaction.notification.util.ContextMapBuilder;
+import com.hazelcast.core.HazelcastInstance;
 
-import jakarta.inject.Inject;
-import net.whydah.sts.slack.SlackNotifications;
-import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.user.authentication.ActivePinRepository;
 
 /**
  * Default implementation of DLR handler that logs delivery reports
+ * and aggregates statistics for periodic Slack notifications using Hazelcast.
  */
 public class LoggingDLRHandler implements Target365DLRHandler {
     
     private static final Logger log = LoggerFactory.getLogger(LoggingDLRHandler.class);
+    
+    // Static monitor instance shared across all handler instances
+    private static SMSDeliveryMonitor monitor;
+    
+    /**
+     * Initialize the SMS delivery monitor with Hazelcast support.
+     * Should be called once during application startup.
+     * 
+     * @param hazelcastInstance The Hazelcast instance for distributed maps
+     * @param gridPrefix The prefix for Hazelcast map names
+     */
+    public static void initializeMonitor(HazelcastInstance hazelcastInstance, String gridPrefix) {
+        if (monitor == null) {
+            monitor = new SMSDeliveryMonitor(hazelcastInstance, gridPrefix);
+            monitor.start();
+            
+            if (monitor.isReportingNode()) {
+                log.info("SMSDeliveryMonitor initialized and started as REPORTING NODE");
+            } else {
+                log.info("SMSDeliveryMonitor initialized as DATA NODE (reporting disabled)");
+            }
+        } else {
+            log.warn("SMSDeliveryMonitor already initialized");
+        }
+    }
+    
+    /**
+     * Shutdown the SMS delivery monitor.
+     * Should be called during application shutdown.
+     */
+    public static void shutdownMonitor() {
+        if (monitor != null) {
+            monitor.stop();
+            log.info("SMSDeliveryMonitor stopped");
+        }
+    }
+    
+    /**
+     * Get monitor statistics (for health checks).
+     */
+    public static Map<String, Object> getMonitorStatistics() {
+        if (monitor != null) {
+            return monitor.getStatistics();
+        }
+        return Map.of("status", "not initialized");
+    }
     
     @Override
     public void handleDeliveryReport(Target365DeliveryReport deliveryReport) {
@@ -24,7 +70,7 @@ public class LoggingDLRHandler implements Target365DLRHandler {
             return;
         }
         
-        log.info("Received DLR: {}", deliveryReport);
+        log.debug("Received DLR: {}", deliveryReport);
         
         if (deliveryReport.isSuccessful()) {
             onDeliverySuccess(deliveryReport);
@@ -40,24 +86,32 @@ public class LoggingDLRHandler implements Target365DLRHandler {
                 deliveryReport.getTransactionId(),
                 deliveryReport.getCorrelationId());
         
-        ActivePinRepository.setDLR(deliveryReport.getRecipientWithoutCountryCode(), deliveryReport.toString());
+        ActivePinRepository.setDLR(deliveryReport.getRecipientWithoutCountryCode(), 
+                                   deliveryReport.toString());
         
-        //send to slack
-        SlackNotifications.sendToChannel("info", "SMS delivered successfully to " + deliveryReport.getRecipient());
+        // Record success in distributed Hazelcast map
+        if (monitor != null) {
+            monitor.recordSuccess(deliveryReport);
+        } else {
+            log.warn("SMSDeliveryMonitor not initialized - success not recorded");
+        }
     }
     
     @Override
     public void onDeliveryFailure(Target365DeliveryReport deliveryReport) {
-        log.error("SMS delivery failed to {}. StatusCode: {}, DetailedStatusCode: {}, TransactionId: {}, CorrelationId: {}",
+        log.error("SMS delivery failed to {}. StatusCode: {}, DetailedStatusCode: {}, " +
+                 "TransactionId: {}, CorrelationId: {}",
                 deliveryReport.getRecipient(),
                 deliveryReport.getStatusCode(),
                 deliveryReport.getDetailedStatusCode(),
                 deliveryReport.getTransactionId(),
                 deliveryReport.getCorrelationId());
-        //send to slack
-        SlackNotifications.sendAlarm("SMS delivery failed", ContextMapBuilder.of(
-        			"DLR", deliveryReport.toString()
-        		));
         
+        // Record failure in distributed Hazelcast map
+        if (monitor != null) {
+            monitor.recordFailure(deliveryReport);
+        } else {
+            log.error("SMSDeliveryMonitor not initialized - failure not recorded");
+        }
     }
 }
