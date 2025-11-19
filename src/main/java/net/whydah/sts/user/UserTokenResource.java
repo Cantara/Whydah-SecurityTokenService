@@ -1905,6 +1905,7 @@ public class UserTokenResource {
 
 	}
 
+	@Deprecated
 	@Path("/{applicationtokenid}/getPin")
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -1936,11 +1937,25 @@ public class UserTokenResource {
 
 			UserToken admin = AuthenticatedUserTokenRepository.getUserToken(adminUserTokenId, applicationtokenid);
 			if (admin != null && admin.getUserName().equals(appConfig.getProperty("whydah.adminuser.username"))) {
-				String pin = ActivePinRepository.getPinSentIfAny(phoneno);
-				if (pin == null) {
-					pin = "";
+
+				String pinFound = ActivePinRepository.getPinSentIfAny(phoneno);
+				String smsPin = generatePin();
+				
+				boolean setPin = pinFound == null;
+				if(pinFound!=null) {
+					smsPin = pinFound;
 				}
-				return Response.ok(pin).build();
+				
+				
+				if(setPin) {
+					String response = SMSGatewayCommandFactory.getInstance().createSendSMSCommand(phoneno, smsPin).execute();
+					if(response!=null && !response.isEmpty()) {
+						log.trace("Answer from smsgw: " + response);	
+					}
+					ActivePinRepository.setPin(phoneno, smsPin, response);
+				}
+				
+				return Response.ok(smsPin).build();
 
 			} else {
 				throw AppExceptionCode.USER_AUTHENTICATION_FAILED_6000;

@@ -16,6 +16,7 @@ import com.hazelcast.core.HazelcastInstance;
 
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.slack.SlackNotifier;
+import net.whydah.sts.smsgw.SMSGatewayCommandFactory;
 import net.whydah.sts.util.HK2ServiceLocator;
 
 public class ActivePinRepository {
@@ -24,7 +25,10 @@ public class ActivePinRepository {
     private static Map<String, String> smsResponseLogMap;
     private static Map<String, String> phoneNumberAndTrustedClientIdMap;
     private static Map<String, String> phoneNumberAndTrustedClientIdPinMap;
-
+    
+    // Track PIN usage for security alerts
+    private static Map<String, Integer> pinUsageCountMap;
+    
     static {
         AppConfig appConfig = new AppConfig();
         String xmlFileName = System.getProperty("hazelcast.config");
@@ -54,11 +58,12 @@ public class ActivePinRepository {
         smsResponseLogMap = hazelcastInstance.getMap(appConfig.getProperty("gridprefix")+"smsResponseLogMap");
         phoneNumberAndTrustedClientIdMap = hazelcastInstance.getMap(appConfig.getProperty("gridprefix")+"phoneNumberAndTrustedClientIdMap");
         phoneNumberAndTrustedClientIdPinMap = hazelcastInstance.getMap(appConfig.getProperty("gridprefix")+"clientPinAndPhoneNumberMap");
+        pinUsageCountMap = hazelcastInstance.getMap(appConfig.getProperty("gridprefix")+"pinUsageCountMap");
         
         log.info("Connecting to map {}",appConfig.getProperty("gridprefix")+"pinMap");
         log.info("Loaded pin-Map size=" + pinMap.size());
         
-        // FIXED: Safe cleanup of invalid entries
+        // Safe cleanup of invalid entries
         Set<String> invalidKeys = new HashSet<>();
         pinMap.forEach((key, value) -> {
             if (value == null || !value.contains(":")) {
@@ -75,6 +80,7 @@ public class ActivePinRepository {
         log.debug("SMS log for " + phoneNr + ": "+ smsResponse);
         String paddedPin = pin + ":" + Instant.now().toEpochMilli();
         pinMap.put(phoneNr, paddedPin);
+        pinUsageCountMap.put(phoneNr, 0); // Reset usage counter
         log.debug("added pin:{} to phone:{} ", paddedPin, phoneNr);
         if(smsResponse!=null && !smsResponse.isEmpty()){
             smsResponseLogMap.put(phoneNr, smsResponse);
@@ -103,7 +109,8 @@ public class ActivePinRepository {
             String datetime = parts[1];
             Instant inst = Instant.ofEpochMilli(Long.valueOf(datetime));
             if(Instant.now().isAfter(inst.plus(5, ChronoUnit.MINUTES))) {
-                pinMap.remove(phoneNr, storedPin);  // ✅ FIXED: Atomic remove
+                pinMap.remove(phoneNr, storedPin);
+                pinUsageCountMap.remove(phoneNr);
                 log.debug("Removed expired pin for phoneNr:" + phoneNr);
                 return null;
             } else {
@@ -126,7 +133,7 @@ public class ActivePinRepository {
             String datetime = parts[2];
             Instant inst = Instant.ofEpochMilli(Long.valueOf(datetime));
             if(Instant.now().isAfter(inst.plus(5, ChronoUnit.MINUTES))) {
-                phoneNumberAndTrustedClientIdPinMap.remove(phoneNr, storedPin);  // ✅ FIXED: Atomic
+                phoneNumberAndTrustedClientIdPinMap.remove(phoneNr, storedPin);
                 log.debug("Removed expired pin for phoneNr {} for client {}", phoneNr, cid);
                 return null;
             } else {
@@ -139,6 +146,10 @@ public class ActivePinRepository {
         }
     }
 
+    /**
+     * Validate and use PIN - allows reuse within 5-minute window
+     * Sends Norwegian security alert on each successful authentication
+     */
     public static boolean usePin(String phoneNr, String pin) {
         pin = paddPin(pin);
         log.debug("usePin - Trying pin {} for phone {}: ", pin, phoneNr);
@@ -156,7 +167,8 @@ public class ActivePinRepository {
         // Check expiration
         Instant inst = Instant.ofEpochMilli(Long.valueOf(datetime));
         if (Instant.now().isAfter(inst.plus(5, ChronoUnit.MINUTES))) {
-            pinMap.remove(phoneNr, storedValue);  // ✅ FIXED: Atomic remove
+            pinMap.remove(phoneNr, storedValue);
+            pinUsageCountMap.remove(phoneNr);
             log.warn("Pin expired for phone {}", phoneNr);
             return false;
         }
@@ -168,15 +180,48 @@ public class ActivePinRepository {
             return false;
         }
         
-        // Atomic remove - only succeeds if value hasn't changed
-        boolean removed = pinMap.remove(phoneNr, storedValue);
-        if (removed) {
-            log.info("usePin - Used pin:{} for phone: {} - removed", pin, phoneNr);
-            smsResponseLogMap.remove(phoneNr);
-            return true;
-        } else {
-            log.warn("Pin was already used by another thread for phone: {}", phoneNr);
-            return false;
+        // ✅ PIN is valid - track usage and send security alert
+        Integer usageCount = pinUsageCountMap.getOrDefault(phoneNr, 0);
+        usageCount++;
+        pinUsageCountMap.put(phoneNr, usageCount);
+        
+        log.info("usePin - Valid pin used (usage #{}) for phone: {}", usageCount, phoneNr);
+        
+        // Send Norwegian security notification
+        sendNorwegianSecurityAlert(phoneNr, usageCount);
+        
+        // ✅ Keep PIN valid for 5 minutes - don't remove
+        return true;
+    }
+    
+    /**
+     * Send Norwegian security alert SMS
+     */
+    private static void sendNorwegianSecurityAlert(String phoneNr, int usageCount) {
+        try {
+            String message;
+            if (usageCount == 1) {
+                message = "Din konto ble åpnet. Hvis dette ikke var deg, kontakt support umiddelbart.";
+            } else {
+                message = String.format(
+                    "Din konto ble åpnet for %d. gang. Hvis dette ikke var deg, kontakt support umiddelbart.", 
+                    usageCount
+                );
+            }
+            
+            log.info("Sending Norwegian security alert to {}: {}", phoneNr, message);
+            
+            String response = SMSGatewayCommandFactory.getInstance()
+                .createSendSMSCommand(phoneNr, message)
+                .execute();
+            
+            if (response != null && !response.isEmpty()) {
+                log.debug("Security alert SMS response: {}", response);
+                setDLR(phoneNr, "SECURITY_ALERT_" + usageCount + ": " + response);
+            }
+        } catch (Exception e) {
+            log.error("Failed to send Norwegian security alert to {}", phoneNr, e);
+            // Don't fail authentication if SMS fails
         }
     }
     
@@ -207,7 +252,7 @@ public class ActivePinRepository {
         // Check expiration
         Instant inst = Instant.ofEpochMilli(Long.valueOf(datetime));
         if (Instant.now().isAfter(inst.plus(5, ChronoUnit.MINUTES))) {
-            phoneNumberAndTrustedClientIdPinMap.remove(phoneNr, storedValue);  // ✅ FIXED: Atomic
+            phoneNumberAndTrustedClientIdPinMap.remove(phoneNr, storedValue);
             return false;
         }
         
@@ -251,5 +296,34 @@ public class ActivePinRepository {
             pin = "000" + pin;
         }
         return pin;
+    }
+    
+    /**
+     * Clean up expired PINs and reset usage counters
+     * Should be called periodically
+     */
+    public static void cleanupExpiredPins() {
+        Set<String> expiredKeys = new HashSet<>();
+        Instant now = Instant.now();
+        
+        pinMap.forEach((phoneNr, storedValue) -> {
+            if (storedValue != null && storedValue.contains(":")) {
+                String[] parts = storedValue.split(":");
+                String datetime = parts[1];
+                Instant inst = Instant.ofEpochMilli(Long.valueOf(datetime));
+                if (now.isAfter(inst.plus(5, ChronoUnit.MINUTES))) {
+                    expiredKeys.add(phoneNr);
+                }
+            }
+        });
+        
+        expiredKeys.forEach(key -> {
+            pinMap.remove(key);
+            pinUsageCountMap.remove(key);
+        });
+        
+        if (!expiredKeys.isEmpty()) {
+            log.info("Cleaned up {} expired PINs", expiredKeys.size());
+        }
     }
 }
