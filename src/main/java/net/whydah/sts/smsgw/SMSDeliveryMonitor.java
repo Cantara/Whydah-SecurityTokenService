@@ -386,7 +386,11 @@ public class SMSDeliveryMonitor {
      * Mask phone number for privacy (show only last 4 digits).
      */
     private String maskPhoneNumber(String phoneNumber) {
-        if (phoneNumber == null || phoneNumber.length() <= 4) {
+    	
+    		//TODO: no, we need to troubleshoot and assist the one who has trouble in receiving the pin 
+    		return phoneNumber;
+    		/*
+    		if (phoneNumber == null || phoneNumber.length() <= 4) {
             return phoneNumber;
         }
         
@@ -394,6 +398,7 @@ public class SMSDeliveryMonitor {
         int maskLength = phoneNumber.length() - visibleDigits;
         
         return "*".repeat(maskLength) + phoneNumber.substring(maskLength);
+        */
     }
     
     /**
