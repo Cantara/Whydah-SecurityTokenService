@@ -68,8 +68,8 @@ public class ApplicationAuthenticationUASClient {
             SlackNotifications.handleException(e);
         }
 
-        // Avoid bootstrap signalling the first 5 seconds
-        if (Instant.now().getEpochSecond() - getRunningSince().getEpochSecond() > 5000) {
+        // Avoid bootstrap signalling the first 60 seconds
+        if (Instant.now().getEpochSecond() - getRunningSince().getEpochSecond() > 60000) {
             HealthResource.addThreatSignal(createThreat("Illegal application tried to access whydah. ApplicationID: " + applicationCredential.getApplicationID() + ", Response from UAS: "));
         }
         return false;

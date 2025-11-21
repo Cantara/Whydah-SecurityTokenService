@@ -188,13 +188,13 @@ public class AuthenticatedApplicationTokenRepository {
             return null;
         }
         if (isApplicationTokenExpired(applicationToken)) {
-            log.warn("Attempting to get an expired applicationtoken.  ApplicationId:{} ApplicationTokenId:{}", applicationToken.getApplicationID(), applicationtokenid);
+            //log.warn("Attempting to get an expired applicationtoken.  ApplicationId:{} ApplicationTokenId:{}", applicationToken.getApplicationID(), applicationtokenid);
             applicationTokenMap.remove(applicationToken.getApplicationTokenId());
             applicationCryptoKeyMap.remove(applicationToken.getApplicationTokenId());
             return null;
         }
         Application application = ApplicationModelFacade.getApplication(applicationToken.getApplicationID());
-        if (updateApplicationTokenWithDetailsFromApplication(applicationToken, application)) {
+        if (application!= null && updateApplicationTokenWithDetailsFromApplication(applicationToken, application)) {
             updateApplicationToken(applicationToken);
         }
         return applicationToken;

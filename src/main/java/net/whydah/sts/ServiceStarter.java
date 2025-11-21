@@ -86,9 +86,11 @@ public class ServiceStarter {
                 log.info("Shutting down the application...");
                 
                 // Send shutdown notification
+                //TODO: no need
+                /*
                 if (finalNotifier != null) {
                     finalNotifier.notifyShutdown();
-                }
+                }*/
                 
                 serviceStarter.stop();
                 log.info("Application shutdown complete.");
