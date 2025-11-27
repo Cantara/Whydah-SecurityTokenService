@@ -10,10 +10,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.hazelcast.core.HazelcastInstance;
 
 import net.whydah.sts.config.AppConfig;
-import net.whydah.sts.slack.SlackNotifications;
 
 /**
  * Background monitor for tracking UserToken map size changes.
@@ -130,7 +130,7 @@ public class UserTokenMapMonitor {
      * Check if Slack notifications are available and enabled.
      */
     private boolean isSlackAvailable() {
-        return SlackNotifications.isAvailable();
+        return SlackNotificationFacade.isAvailable();
     }
     
     /**
@@ -200,7 +200,7 @@ public class UserTokenMapMonitor {
             context.put("currentSize", newSize);
             context.put("difference", difference);
             context.put("changePercentage", calculatePercentageChange(oldSize, newSize));
-            context.put("clusterMembers", AuthenticatedUserTokenRepository.getNoOfClusterMembers());
+            //context.put("clusterMembers", AuthenticatedUserTokenRepository.getNoOfClusterMembers());
             context.put("usernameMapSize", AuthenticatedUserTokenRepository.getActiveUsernameMapSize());
             
             String message;
@@ -216,7 +216,7 @@ public class UserTokenMapMonitor {
                 isSuccess = false;
             }
             
-            SlackNotifications.sendToChannel("info", message, context, isSuccess);
+            SlackNotificationFacade.sendToChannel("info", message, context, isSuccess);
             
             log.info("Reported map size change to Slack: {} -> {} ({})", 
                     oldSize, newSize, difference > 0 ? "+" + difference : difference);
@@ -248,13 +248,13 @@ public class UserTokenMapMonitor {
             context.put("currentSize", currentSize);
             context.put("minutesSinceLastChange", minutesSinceLastChange);
             context.put("checkIntervalMinutes", checkIntervalMinutes);
-            context.put("clusterMembers", AuthenticatedUserTokenRepository.getNoOfClusterMembers());
+            //context.put("clusterMembers", AuthenticatedUserTokenRepository.getNoOfClusterMembers());
             
             String message = String.format(
                     "Active user sessions stable at %d for the last %d minutes", 
                     currentSize, minutesSinceLastChange);
             
-            SlackNotifications.sendToChannel("info", message, context);
+            SlackNotificationFacade.sendInfo("info", message, context);
             
             log.info("Reported stable map size to Slack: size={}, stable for {} minutes", 
                     currentSize, minutesSinceLastChange);

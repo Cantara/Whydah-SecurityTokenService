@@ -1,12 +1,22 @@
 package net.whydah.sts.user.authentication;
 
 
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.exoreaction.notification.SlackNotificationFacade;
+import com.exoreaction.notification.util.ContextMapBuilder;
+
+import jakarta.inject.Inject;
 import net.whydah.sso.application.mappers.ApplicationTokenMapper;
 import net.whydah.sso.application.types.ApplicationToken;
 import net.whydah.sso.commands.adminapi.user.CommandGetUserAggregate;
 import net.whydah.sso.commands.adminapi.user.CommandListUsers;
 import net.whydah.sso.commands.adminapi.user.CommandUserExists;
-import net.whydah.sso.user.helpers.UserTokenXpathHelper;
 import net.whydah.sso.user.mappers.UserCredentialMapper;
 import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserCredential;
@@ -14,23 +24,11 @@ import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.errorhandling.AuthenticationFailedException;
-import net.whydah.sts.slack.SlackNotifications;
-import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.user.AuthenticatedUserTokenRepository;
 import net.whydah.sts.user.UserTokenFactory;
 import net.whydah.sts.user.authentication.commands.CommandCreateFBUser;
 import net.whydah.sts.user.authentication.commands.CommandCreatePinUser;
 import net.whydah.sts.user.authentication.commands.CommandVerifyUserCredential;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.exoreaction.notification.util.ContextMapBuilder;
-
-import jakarta.inject.Inject;
-
-import java.net.URI;
-import java.util.List;
-import java.util.UUID;
 
 public class UserAuthenticatorImpl implements UserAuthenticator {
 	private static final Logger log = LoggerFactory.getLogger(UserAuthenticatorImpl.class);
@@ -38,8 +36,6 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 
 	private URI useradminservice;
 	private final AppConfig appConfig = new AppConfig();
-
-	@Inject SlackNotifier slackNotifier;
 
 	@Inject
 	public UserAuthenticatorImpl() {
@@ -103,7 +99,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 
 						if (usersJson == null) {
 							log.error("Unable to find any user from the query " + usersQuery);
-							slackNotifier.sendAlarm("Unable to find any users from the CommandListUsers for the query " + usersQuery, 
+							SlackNotificationFacade.sendAlarm("Unable to find any users from the CommandListUsers for the query " + usersQuery, 
 									ContextMapBuilder.of(
 											"location", "createAndLogonPinUser  method",
 											"applicationtokenid", applicationTokenId, 
@@ -180,7 +176,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			if (usersJson == null) {
 				log.error("Unable to find a user matching the given phonenumber.");
 
-				slackNotifier.sendAlarm("Unable to find any user from the query " + usersQuery, 
+				SlackNotificationFacade.sendAlarm("Unable to find any user from the query " + usersQuery, 
 						ContextMapBuilder.of(
 								"location", "logonPinUser  method",
 								"applicationtokenid", applicationtokenid, 
@@ -281,7 +277,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			if (usersJson == null) {
 				log.error("Unable to find a user matching the given phonenumber.");
 
-				slackNotifier.sendAlarm("Unable to find any user from the query " + usersQuery, 
+				SlackNotificationFacade.sendAlarm("Unable to find any user from the query " + usersQuery, 
 						ContextMapBuilder.of(
 								"location", "logonWithTrustedUser  method",
 								"applicationtokenid", applicationtokenid, 
@@ -334,7 +330,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			if (usersJson == null) {
 				log.error("Unable to find a user matching the given phonenumber.");
 
-				slackNotifier.sendAlarm("Unable to find any user from the query " + usersQuery, 
+				SlackNotificationFacade.sendAlarm("Unable to find any user from the query " + usersQuery, 
 						ContextMapBuilder.of(
 								"location", "logonPinUserForTrustedUser  method",
 								"applicationtokenid", applicationtokenid, 
@@ -400,7 +396,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			if (usersJson == null) {
 				log.error("Unable to find a user matching the given phonenumber.");
 
-				slackNotifier.sendAlarm("Unable to find any user from the query " + usersQuery, 
+				SlackNotificationFacade.sendAlarm("Unable to find any user from the query " + usersQuery, 
 						ContextMapBuilder.of(
 								"location", "logonUserUsingSharedSTSSecret  method",
 								"applicationtokenid", applicationtokenid, 

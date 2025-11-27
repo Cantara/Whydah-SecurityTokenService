@@ -9,16 +9,15 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 
 import net.whydah.sts.config.AppConfig;
-import net.whydah.sts.slack.SlackNotifications;
 
 /**
  * Monitor for SMS delivery reports with Hazelcast distributed map support.
@@ -289,7 +288,7 @@ public class SMSDeliveryMonitor {
      * Report successful SMS deliveries to Slack.
      */
     private void reportSuccesses(long count) {
-        if (!SlackNotifications.isAvailable()) {
+        if (!SlackNotificationFacade.isAvailable()) {
             log.debug("Slack not available - skipping success report for {} SMS", count);
             return;
         }
@@ -304,7 +303,7 @@ public class SMSDeliveryMonitor {
             String message = String.format("%d SMS delivered successfully in the last %d minutes (cluster-wide)", 
                     count, reportIntervalMinutes);
             
-            SlackNotifications.sendToChannel("info", message, context, true);
+            SlackNotificationFacade.sendToChannel("info", message, context, true);
             
             log.info("Reported {} successful SMS deliveries to Slack", count);
             
@@ -317,7 +316,7 @@ public class SMSDeliveryMonitor {
      * Report failed SMS deliveries to Slack with details.
      */
     private void reportFailures(int count, List<FailedDelivery> failures) {
-        if (!SlackNotifications.isAvailable()) {
+        if (!SlackNotificationFacade.isAvailable()) {
             log.error("Slack not available - {} SMS delivery failures not reported to Slack", count);
             return;
         }
@@ -345,7 +344,7 @@ public class SMSDeliveryMonitor {
             String message = String.format("%d SMS delivery FAILED in the last %d minutes (cluster-wide)", 
                     count, reportIntervalMinutes);
             
-            SlackNotifications.sendAlarm(message, context);
+            SlackNotificationFacade.sendAlarm(message, context);
             
             log.error("Reported {} failed SMS deliveries to Slack", count);
             

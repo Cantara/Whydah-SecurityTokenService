@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.valuereporter.activity.ObservedActivity;
 import org.valuereporter.client.MonitorReporter;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.fasterxml.jackson.databind.util.LRUMap;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
@@ -40,7 +41,6 @@ import net.whydah.sts.config.DevModeHelper;
 import net.whydah.sts.errorhandling.AppException;
 import net.whydah.sts.errorhandling.AppExceptionCode;
 import net.whydah.sts.errorhandling.AuthenticationFailedException;
-import net.whydah.sts.slack.SlackNotifications;
 import net.whydah.sts.smsgw.SMSGatewayCommandFactory;
 import net.whydah.sts.threat.ThreatResource;
 import net.whydah.sts.user.authentication.ActivePinRepository;
@@ -1310,7 +1310,7 @@ public class UserTokenResource {
 			
 		} catch (Exception ex) {
 			log.error("undexprected error", ex);
-			SlackNotifications.handleException(ex);
+			SlackNotificationFacade.handleException(ex);
 			return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 		}
 		
@@ -1391,7 +1391,7 @@ public class UserTokenResource {
 
 		} catch (Exception ex) {
 			log.error("undexprected error", ex);
-			SlackNotifications.handleException(ex);
+			SlackNotificationFacade.handleException(ex);
 			return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 		}
 		
@@ -1524,7 +1524,7 @@ public class UserTokenResource {
 			return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 		} catch (Exception ex) {
 			log.error("undexprected error", ex);
-			SlackNotifications.handleException(ex);
+			SlackNotificationFacade.handleException(ex);
 			return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 		}
 		
@@ -2039,7 +2039,7 @@ public class UserTokenResource {
 			
 		} catch(Exception ex){
 			log.error("undexprected error", ex);
-			SlackNotifications.handleException(ex);
+			SlackNotificationFacade.handleException(ex);
 			return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 		}
 		

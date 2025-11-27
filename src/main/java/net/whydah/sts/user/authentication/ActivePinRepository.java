@@ -2,14 +2,18 @@ package net.whydah.sts.user.authentication;
 
 import java.io.FileNotFoundException;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.exoreaction.notification.util.ContextMapBuilder;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
@@ -17,9 +21,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
 import net.whydah.sts.config.AppConfig;
-import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.smsgw.SMSGatewayCommandFactory;
-import net.whydah.sts.util.HK2ServiceLocator;
 
 public class ActivePinRepository {
     private final static Logger log = LoggerFactory.getLogger(ActivePinRepository.class);
@@ -240,8 +242,6 @@ public class ActivePinRepository {
                 setDLR(phoneNr, "SECURITY_ALERT_" + usageCount + ": " + response);
             }
             
-            // Also send Slack alert for monitoring
-            sendSlackSecurityAlert(phoneNr, usageCount);
             
         } catch (Exception e) {
             log.error("Failed to send Norwegian security alert to {}", phoneNr, e);
@@ -254,9 +254,8 @@ public class ActivePinRepository {
      */
     private static void sendSlackSecurityAlert(String phoneNr, int usageCount) {
         try {
-            SlackNotifier slackNotifier = HK2ServiceLocator.getService(SlackNotifier.class);
-            if (slackNotifier != null) {
-                slackNotifier.sendAlarm(
+           
+            	SlackNotificationFacade.sendAlarm(
                     "High PIN reuse detected", 
                     ContextMapBuilder.of(
                         "phone", phoneNr,
@@ -265,21 +264,20 @@ public class ActivePinRepository {
                         "severity", usageCount >= 10 ? "HIGH" : "MEDIUM"
                     )
                 );
-            }
+            
         } catch (Exception e) {
             log.warn("Failed to send Slack security alert", e);
         }
     }
     
     private static void sendInvalidPinAlert(String phoneNr, String submittedPin, String storedPin) {
-        SlackNotifier slackNotifier = HK2ServiceLocator.getService(SlackNotifier.class);
-        if (slackNotifier != null) {
-            slackNotifier.sendAlarm("Illegal pin logon attempted.", ContextMapBuilder.of(
-                "phone", phoneNr,
-                "submitted_pin", submittedPin,
-                "stored_pin", storedPin
-            ));
-        }
+
+    		SlackNotificationFacade.sendAlarm("Illegal pin logon attempted.", ContextMapBuilder.of(
+    			"phone", phoneNr,
+    			"submitted_pin", submittedPin,
+    			"stored_pin", storedPin
+    			));
+
     }
     
     public static boolean usePinForTrustedClient(String clientId, String phoneNr, String pin) {

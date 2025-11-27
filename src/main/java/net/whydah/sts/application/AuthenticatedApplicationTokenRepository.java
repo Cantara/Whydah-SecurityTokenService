@@ -14,6 +14,7 @@ import javax.crypto.spec.IvParameterSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hazelcast.config.Config;
@@ -30,7 +31,6 @@ import net.whydah.sso.application.types.Tag;
 import net.whydah.sso.ddd.model.application.ApplicationTokenExpires;
 import net.whydah.sso.session.baseclasses.ExchangeableKey;
 import net.whydah.sts.config.AppConfig;
-import net.whydah.sts.slack.SlackNotifications;
 
 
 public class AuthenticatedApplicationTokenRepository {
@@ -282,7 +282,7 @@ public class AuthenticatedApplicationTokenRepository {
             return applicationToken.getApplicationName();
         }
         log.error("getApplicationNameFromApplicationTokenId - Unable to find applicationName for applicationTokenId=" + applicationtokenid);
-        SlackNotifications.sendAlarm("getApplicationNameFromApplicationTokenId - Unable to find applicationName for applicationTokenId=" + applicationtokenid);
+        SlackNotificationFacade.sendAlarm("getApplicationNameFromApplicationTokenId - Unable to find applicationName for applicationTokenId=" + applicationtokenid);
         return "";
     }
 

@@ -24,13 +24,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.valuereporter.client.activity.ObservedActivityDistributer;
 
+import com.exoreaction.notification.SlackNotificationFacade;
+
 import net.whydah.sso.config.ApplicationMode;
 import net.whydah.sts.application.ApplicationResource;
 import net.whydah.sts.config.AppBinder;
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.config.ServiceLocatorInitializationFilter;
 import net.whydah.sts.health.HealthResource;
-import net.whydah.sts.slack.AppLifecycleNotifier;
 import net.whydah.sts.smsgw.LoggingDLRHandler;
 import net.whydah.sts.smsgw.Target365DLRResource;
 import net.whydah.sts.threat.ThreatResource;
@@ -41,13 +42,13 @@ public class ServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(ServiceStarter.class);
     private HttpServer httpServer;
     private AppBinder appBinder;
-    private int webappPort;
+    private static int webappPort;
     private static final String CONTEXTPATH = "/tokenservice";
     private static final String SERVICE_NAME = "STS";
     public static final String IMPLEMENTATION_VERSION = ServiceStarter.class.getPackage().getImplementationVersion();
 
     private static KeyPair publicKeyPair;
-    private AppLifecycleNotifier lifecycleNotifier;
+    //private AppLifecycleNotifier lifecycleNotifier;
 
     public static void main(String[] args) {
         // http://www.slf4j.org/legacy.html#jul-to-slf4j
@@ -63,34 +64,24 @@ public class ServiceStarter {
         try {
             serviceStarter.startServer();
             
-            // Send startup success notification
-            if (serviceStarter.lifecycleNotifier != null) {
-                serviceStarter.lifecycleNotifier.notifyStartupSuccess();
-            }
-            
         } catch (Exception e) {
             log.error("Failed to start SecurityTokenService", e);
             
-            // Send startup failure notification
-            if (serviceStarter.lifecycleNotifier != null) {
-                serviceStarter.lifecycleNotifier.notifyStartupFailure(e);
-            }
+            SlackNotificationFacade.notifyStartupFailure(e, IMPLEMENTATION_VERSION);
             
             System.exit(1);
         }
        
         // Add JVM shutdown hook
-        final AppLifecycleNotifier finalNotifier = serviceStarter.lifecycleNotifier;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 log.info("Shutting down the application...");
                 
                 // Send shutdown notification
-                //TODO: no need
-                /*
-                if (finalNotifier != null) {
-                    finalNotifier.notifyShutdown();
-                }*/
+                SlackNotificationFacade.notifyShutdown(webappPort, CONTEXTPATH, IMPLEMENTATION_VERSION);
+                
+                // Cleanup Slack service
+                SlackNotificationFacade.shutdown();
                 
                 serviceStarter.stop();
                 log.info("Application shutdown complete.");
@@ -148,14 +139,7 @@ public class ServiceStarter {
         }
 
         // Initialize lifecycle notifier
-        lifecycleNotifier = AppLifecycleNotifier.builder()
-                .serviceName(SERVICE_NAME)
-                .version(IMPLEMENTATION_VERSION != null ? IMPLEMENTATION_VERSION : "unknown")
-                .applicationMode(appMode)
-                .port(webappPort)
-                .contextPath(CONTEXTPATH)
-                .addContext("hostname", getHostname())
-                .build();
+        SlackNotificationFacade.initialize("STS", appMode);
 
         // Create AppBinder instance to manage lifecycle
         appBinder = new AppBinder(appMode);
@@ -227,6 +211,9 @@ public class ServiceStarter {
         log.info("  WADL:         http://localhost:{}{}/application.wadl", webappPort, CONTEXTPATH);
         log.info("  Test Page:    http://localhost:{}{}/{}", webappPort, CONTEXTPATH, appConfig.getProperty("testpage"));
         log.info("================================================================================");
+        
+        // Send startup success notification
+        SlackNotificationFacade.notifyStartupSuccess(webappPort, CONTEXTPATH, IMPLEMENTATION_VERSION);
     }
 
     public int getPort() {

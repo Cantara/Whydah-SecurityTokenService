@@ -1,7 +1,12 @@
 package net.whydah.sts.user;
 
 import java.io.FileNotFoundException;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +28,6 @@ import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.ServiceStarter;
 import net.whydah.sts.config.AppConfig;
-import net.whydah.sts.slack.SlackNotifications;
 import net.whydah.sts.threat.ThreatResource;
 import net.whydah.sts.user.statistics.UserSessionObservedActivity;
 import net.whydah.sts.util.ApplicationModelHelper;

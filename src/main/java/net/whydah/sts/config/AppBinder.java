@@ -15,8 +15,6 @@ import com.exoreaction.notification.config.SlackConfigBuilder;
 import com.exoreaction.notification.helper.SlackNotificationHelperFactory;
 
 import net.whydah.sso.config.ApplicationMode;
-import net.whydah.sts.slack.NoOpSlackNotifier;
-import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.smsgw.LoggingDLRHandler;
 import net.whydah.sts.smsgw.Target365DLRHandler;
 import net.whydah.sts.user.authentication.DummyUserAuthenticator;
@@ -36,19 +34,7 @@ public class AppBinder extends AbstractBinder {
     
     @Override
     protected void configure() {
-        
-        // Initialize and bind Slack services
-        slackEnabled = initSlackNotifier();
-        
-        // Bind SlackNotifier based on whether Slack is enabled
-        if (slackEnabled) {
-            log.info("Binding active SlackNotifier");
-            bind(SlackNotifier.class).to(SlackNotifier.class);
-        } else {
-            log.info("Binding no-op SlackNotifier");
-            bind(NoOpSlackNotifier.class).to(SlackNotifier.class);
-        }
-        
+       
         bind(Target365DLRHandler.class).to(LoggingDLRHandler.class);
         
         // Bind UserAuthenticator

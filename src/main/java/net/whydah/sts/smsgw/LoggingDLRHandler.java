@@ -109,7 +109,12 @@ public class LoggingDLRHandler implements Target365DLRHandler {
         
         // Record failure in distributed Hazelcast map
         if (monitor != null) {
-            monitor.recordFailure(deliveryReport);
+        	    //some extra filter
+        		boolean isUnkownPhoneNumber = deliveryReport.getDetailedStatusCode().equalsIgnoreCase("UnknownSubscriber");
+            if(isUnkownPhoneNumber) {
+            		monitor.recordFailure(deliveryReport);
+            }
+        		
         } else {
             log.error("SMSDeliveryMonitor not initialized - failure not recorded");
         }

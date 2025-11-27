@@ -17,6 +17,7 @@ import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.exoreaction.notification.util.ContextMapBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,7 +52,6 @@ import net.whydah.sts.application.authentication.ApplicationAuthenticationUASCli
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.errorhandling.AppException;
 import net.whydah.sts.errorhandling.AppExceptionCode;
-import net.whydah.sts.slack.SlackNotifier;
 import net.whydah.sts.user.AuthenticatedUserTokenRepository;
 import net.whydah.sts.user.authentication.UserAuthenticator;
 
@@ -69,9 +69,6 @@ public class ApplicationResource {
 
 	@Inject
 	private UserAuthenticator userAuthenticator;
-
-	@Inject
-	private SlackNotifier slackNotifier;
 
 	@GET
 	@Produces(MediaType.TEXT_HTML)
@@ -202,7 +199,7 @@ public class ApplicationResource {
 
 		} catch (Exception e) {
 			log.error("Something went really wrong here", e);
-			slackNotifier.handleException(e);
+			SlackNotificationFacade.handleException(e);
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
 	}
@@ -579,7 +576,7 @@ public class ApplicationResource {
 			}
 		} catch (Exception e) {
 			log.error("Error in verifyApplicationCredentialAgainstLocalAndUAS_UIB.", e);
-			slackNotifier.handleException(e);
+			SlackNotificationFacade.handleException(e);
 			return false;
 		}
 	}
@@ -599,7 +596,7 @@ public class ApplicationResource {
 				}
 			} catch(Exception ex) {
 				ex.printStackTrace();
-				slackNotifier.handleException(ex);
+				SlackNotificationFacade.handleException(ex);
 			}
 		}
 		return applicationToken;
@@ -625,7 +622,7 @@ public class ApplicationResource {
 			}
 		} catch (Exception e) {
 			log.warn("Unable to use encryption", e);
-			slackNotifier.handleExceptionAsWarning(e, "handleCryptoKey", "Unable to use encryption", 
+			SlackNotificationFacade.handleExceptionAsWarning(e, "handleCryptoKey", "Unable to use encryption", 
 					ContextMapBuilder.of("applicationId", applicationToken.getApplicationID(),
 							"applicationName", applicationToken.getApplicationName()));
 		}

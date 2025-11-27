@@ -10,7 +10,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.inject.Inject;
+import com.exoreaction.notification.SlackNotificationFacade;
+
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ResourceInfo;
@@ -21,7 +22,6 @@ import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import net.whydah.sts.config.AppConfig;
-import net.whydah.sts.slack.SlackNotifier;
 
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
@@ -29,9 +29,6 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
     private static final Logger log = LoggerFactory.getLogger(NotFoundExceptionMapper.class);
 
-    @Inject 
-    private SlackNotifier slackNotifier;
-    
     @Context
     private UriInfo uriInfo;
     
@@ -50,12 +47,12 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         
         boolean shouldIgnore = shouldIgnoreResource(requestedPath);
         
-        if (!shouldIgnore && slackNotifier != null) {
+        if (!shouldIgnore && SlackNotificationFacade.isAvailable()) {
             Map<String, Object> context = new HashMap<>();
             context.put("requestedPath", requestedPath);
             context.put("method", uriInfo != null ? uriInfo.getRequestUri().toString() : "unknown");
             
-            slackNotifier.handleExceptionAsWarning(
+            SlackNotificationFacade.handleExceptionAsWarning(
                 ex, 
                 "NotFoundExceptionMapper", 
                 "Resource not found: " + requestedPath, 

@@ -3,22 +3,19 @@ package net.whydah.sts.errorhandling;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import jakarta.inject.Inject;
+import com.exoreaction.notification.SlackNotificationFacade;
+
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import net.whydah.sts.slack.SlackNotifier;
 
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
- 
-	@Inject SlackNotifier slackNotifer;
-
-	
+ 	
 	public Response toResponse(Throwable ex) {
 		WebApplicationException d;
 		ErrorMessage errorMessage = new ErrorMessage();		
@@ -30,7 +27,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 		errorMessage.setDeveloperMessage(errorStackTrace.toString());
 		errorMessage.setLink("");
 				
-		slackNotifer.handleException(ex);
+		SlackNotificationFacade.handleException(ex);
 		
 		return Response.status(errorMessage.getStatus())
 				.entity(ExceptionConfig.handleSecurity(errorMessage).toString())

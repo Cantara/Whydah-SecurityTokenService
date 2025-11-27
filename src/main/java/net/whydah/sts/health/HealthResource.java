@@ -8,6 +8,7 @@ import java.time.temporal.ChronoUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.exoreaction.notification.util.ContextMapBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -18,7 +19,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import net.whydah.sso.whydah.ThreatSignal;
-import net.whydah.sts.slack.SlackNotifications;
 
 /**
  * Endpoint for health check
@@ -52,7 +52,7 @@ public class HealthResource {
             String errorHealthJson = health.toPrettyString();
             log.debug("errorHealthJson: {}", errorHealthJson);
             
-            SlackNotifications.handleException(t, "Health issue in STS", ContextMapBuilder.of("health", errorHealthJson));
+            SlackNotificationFacade.handleException(t, "Health issue in STS", ContextMapBuilder.of("health", errorHealthJson));
 
             return Response.serverError().build();
         }

@@ -5,10 +5,10 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.POST;
@@ -20,7 +20,6 @@ import net.whydah.sso.whydah.DEFCON;
 import net.whydah.sso.whydah.ThreatSignal;
 import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.health.HealthResource;
-import net.whydah.sts.slack.SlackNotifier;
 
 @Path("/threat")
 public class ThreatResource {
@@ -28,9 +27,6 @@ public class ThreatResource {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static String defconvalue= DEFCON.DEFCON5.toString();
     private static ThreatSignal receivedSignal;
-
-    @Inject
-    SlackNotifier slackNotifier;
     
     @Path("/{applicationtokenid}/signal")
     @POST
@@ -67,16 +63,23 @@ public class ThreatResource {
                 
                 try {
                 	
-                	if(receivedSignal.getSignalSeverity().equalsIgnoreCase("HIGH")) {
+               
+                	if(receivedSignal.getSignalSeverity().equalsIgnoreCase("HIGH") && !isInvalidPIN(receivedSignal)) {
                 		HealthResource.addThreatSignal(receivedSignal);
                 		String signalJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(receivedSignal);
-    					slackNotifier.sendAlarm("Threat received:" + signalJson);	
+                		SlackNotificationFacade.sendAlarm("Threat received:" + signalJson);	
                 	}
 					
                 } catch (JsonProcessingException e) {
 					e.printStackTrace();
 				}
             }
+
+			private boolean isInvalidPIN(ThreatSignal receivedSignal) {
+				return receivedSignal.getText().startsWith("Pin verification failed") || 
+						receivedSignal.getText().startsWith("Registration failed. Illegal form data")
+						;
+			}
         });
         return Response.ok().build();
     }

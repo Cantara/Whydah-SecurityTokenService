@@ -10,6 +10,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.exoreaction.notification.util.ContextMapBuilder;
 
 import net.whydah.sso.application.mappers.ApplicationMapper;
@@ -23,7 +24,6 @@ import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.application.authentication.commands.CommandCheckApplicationCredentialInUAS;
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.health.HealthResource;
-import net.whydah.sts.slack.SlackNotifications;
 
 
 
@@ -65,7 +65,7 @@ public class ApplicationAuthenticationUASClient {
             }
         } catch (Exception e) {
             log.info("Unable to access UAS by Command", e);
-            SlackNotifications.handleException(e);
+            SlackNotificationFacade.handleException(e);
         }
 
         // Avoid bootstrap signalling the first 60 seconds
@@ -96,7 +96,7 @@ public class ApplicationAuthenticationUASClient {
             	}
             } else {
             	log.warn("Cannot set tags for apptoken {}, appid {}, appname {}. CommandGetApplication failed to execute", applicationToken.getApplicationTokenId(), applicationToken.getApplicationID(), applicationToken.getApplicationName());
-            	SlackNotifications.sendAlarm("addApplicationTagsFromUAS failed", 
+            	SlackNotificationFacade.sendAlarm("addApplicationTagsFromUAS failed", 
             			ContextMapBuilder.of("apptoken",  applicationToken.getApplicationTokenId(),
             					"appid", applicationToken.getApplicationID(),
             					"appname", applicationToken.getApplicationName()
@@ -104,7 +104,7 @@ public class ApplicationAuthenticationUASClient {
             }
         } catch (Exception e) {
             log.info("Unable to access UAS by Command", e);
-            SlackNotifications.handleException(e);
+            SlackNotificationFacade.handleException(e);
         }
 
         return applicationToken;

@@ -10,11 +10,11 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exoreaction.notification.SlackNotificationFacade;
 import com.exoreaction.notification.util.ContextMapBuilder;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 
-import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import net.minidev.json.JSONArray;
 import net.whydah.sso.application.types.Application;
@@ -25,8 +25,6 @@ import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.application.ApplicationModelFacade;
 import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.config.AppConfig;
-import net.whydah.sts.slack.SlackNotifications;
-import net.whydah.sts.slack.SlackNotifier;
 
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 03.11.14
@@ -40,8 +38,6 @@ public class UserTokenFactory {
 
     private static AppConfig appConfig = new AppConfig();
     
-    @Inject SlackNotifier slackNotifier;
-
     @Deprecated
     public UserTokenFactory() {
         this(appConfig.getProperty("DEFCON"));
@@ -205,7 +201,7 @@ public class UserTokenFactory {
             return AuthenticatedApplicationTokenRepository.verifyApplicationTokenId(applicationtokenid);
         } else {
             log.warn("verifyApplicationToken - not expecting null values applicationtokenid null, applicationtokenXml {}", applicationtokenXml);
-            SlackNotifications.sendAlarm("verifyApplicationToken - not expecting null values applicationtokenid null", 
+            SlackNotificationFacade.sendAlarm("verifyApplicationToken - not expecting null values applicationtokenid null", 
             		ContextMapBuilder.of("applicationTokenXml", applicationtokenXml));
             return false;
         }
