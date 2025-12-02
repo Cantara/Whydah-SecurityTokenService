@@ -87,7 +87,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 		if (ActivePinRepository.usePin(cellPhone, pin)) {
 			try {
 				//check if the user exists or not, better to avoid misused calls
-				Boolean exists = new CommandUserExists(useradminservice, applicationTokenId, adminUserTokenId, cellPhone).execute();
+				ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
+				Boolean exists = new CommandUserExists(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, cellPhone).execute();
 				if(exists) {
 					UserToken existingUserToken = AuthenticatedUserTokenRepository.getUserTokenByUserName(cellPhone, applicationTokenId);
 					if(existingUserToken!=null) {
@@ -116,7 +117,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 						UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
 						if (userTokenIdentity != null) {
 							log.info("Found matching UserIdentity {}", userTokenIdentity);
-							String userAggregateJson = new CommandGetUserAggregate(useradminservice, applicationTokenId, adminUserTokenId, userTokenIdentity.getUid()).execute();
+							String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
 							UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 							userToken.setSecurityLevel("0");  
 							userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
@@ -169,9 +170,10 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 	public UserToken logonPinUser(String applicationtokenid, String appTokenXml, String adminUserTokenId, String cellPhone, String pin, long userTokenLifespan) {
 		log.info("logonPinUser() called with " + "applicationtokenid = [" + applicationtokenid + "], appTokenXml = [" + appTokenXml + "], cellPhone = [" + cellPhone + "], pin = [" + pin + "]");
 		if (ActivePinRepository.usePin(cellPhone, pin)) {
+			ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
 			String usersQuery = cellPhone;
 			// produserer userJson. denne kan inneholde fler users dette er json av
-			String usersJson = new CommandListUsers(useradminservice, applicationtokenid, adminUserTokenId, usersQuery).execute();
+			String usersJson = new CommandListUsers(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, usersQuery).execute();
 
 			if (usersJson == null) {
 				log.error("Unable to find a user matching the given phonenumber.");
@@ -194,8 +196,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
 			if (userTokenIdentity != null) {
 				log.info("Found matching UserIdentity {}", userTokenIdentity);
-
-				String userAggregateJson = new CommandGetUserAggregate(useradminservice, applicationtokenid, adminUserTokenId, userTokenIdentity.getUid()).execute();
+				
+				String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
 
 				UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 				userToken.setSecurityLevel("0");  // UserIdentity as source = securitylevel=0
@@ -293,8 +295,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
 			if (userTokenIdentity != null) {
 				log.info("Found matching UserIdentity {}", userTokenIdentity);
-
-				String userAggregateJson = new CommandGetUserAggregate(useradminservice, applicationtokenid, adminUserTokenId, userTokenIdentity.getUid()).execute();
+				ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
+				String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
 
 				UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 				userToken.setSecurityLevel("0");  // UserIdentity as source = securitylevel=0
@@ -347,7 +349,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			if (userTokenIdentity != null) {
 				log.info("Found matching UserIdentity {}", userTokenIdentity);
 
-				String userAggregateJson = new CommandGetUserAggregate(useradminservice, applicationtokenid, adminUserTokenId, userTokenIdentity.getUid()).execute();
+				ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
+				String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
 
 				UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 				userToken.setSecurityLevel("0");  // UserIdentity as source = securitylevel=0
@@ -376,7 +379,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			int maxAttempts = 5;
 
 			for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-			    usersJson = new CommandListUsers(useradminservice, applicationtokenid, adminUserTokenId, usersQuery).execute();
+				ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
+			    usersJson = new CommandListUsers(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, usersQuery).execute();
 			    
 			    if (usersJson != null) {
 			        break; // Success!
@@ -413,7 +417,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			if (userTokenIdentity != null) {
 				log.info("Found matching UserIdentity {}", userTokenIdentity);
 
-				String userAggregateJson = new CommandGetUserAggregate(useradminservice, applicationtokenid, adminUserTokenId, userTokenIdentity.getUid()).execute();
+				ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
+				String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
 
 				UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 				userToken.setSecurityLevel("2");  // UserIdentity as source = securitylevel=0

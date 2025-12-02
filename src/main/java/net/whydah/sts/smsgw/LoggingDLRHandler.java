@@ -110,7 +110,7 @@ public class LoggingDLRHandler implements Target365DLRHandler {
         // Record failure in distributed Hazelcast map
         if (monitor != null) {
         	    //some extra filter
-        		boolean isUnkownPhoneNumber = deliveryReport.getDetailedStatusCode().equalsIgnoreCase("UnknownSubscriber");
+        		boolean isUnkownPhoneNumber = deliveryReport.getDetailedStatusCode().toUpperCase().contains("UNKNOWNSUBSCRIBER");
             if(isUnkownPhoneNumber) {
             		monitor.recordFailure(deliveryReport);
             }
