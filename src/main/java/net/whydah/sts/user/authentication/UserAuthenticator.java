@@ -18,24 +18,20 @@ public interface UserAuthenticator {
     
     UserToken logonPinUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String pin, long userTokenLifespan);
 
-    default UserToken createAndLogonUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String fbUserXml) {
-    		return createAndLogonUser(applicationtokenid, appTokenXml, userCredentialXml, fbUserXml, 0);
+    default UserToken createAndLogonUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String fbUserXml) {
+    		return createAndLogonUser(applicationtokenid, appTokenXml, adminUserTokenIdparam, fbUserXml, 0);
     }
     
-    UserToken createAndLogonUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String fbUserXml, long userTokenLifespan);
+    UserToken createAndLogonUser(String applicationtokenid, String appTokenXml, String useradminTokenId, String fbUserXml, long userTokenLifespan);
     
-    default UserToken createAndLogonPinUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String cellPhone, String pin, String userJson) {
-    		return createAndLogonPinUser(applicationtokenid, appTokenXml, userCredentialXml, cellPhone, pin, userJson, 0);
+    default UserToken createAndLogonPinUser(String applicationtokenid, String appTokenXml, String useradminTokenId, String cellPhone, String pin, String userJson) {
+    		return createAndLogonPinUser(applicationtokenid, appTokenXml, useradminTokenId, cellPhone, pin, userJson, 0);
     }
     
-    UserToken createAndLogonPinUser(String applicationtokenid, String appTokenXml, String userCredentialXml, String cellPhone, String pin, String userJson, long userTokenLifespan);
+    UserToken createAndLogonPinUser(String applicationtokenid, String appTokenXml, String useradminTokenId, String cellPhone, String pin, String userJson, long userTokenLifespan);
 
     UserToken getRefreshedUserToken(String uid);
-    
-    UserToken logonPinUserForTrustedUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String clientId, String pin);
-
-    UserToken logonWithTrustedUser(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String clientid);
-    
+ 
     default UserToken logonUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String secret) {
     		return logonUserUsingSharedSTSSecret(applicationtokenid, appTokenXml, adminUserTokenIdparam, cellPhone, secret, 0);
     }

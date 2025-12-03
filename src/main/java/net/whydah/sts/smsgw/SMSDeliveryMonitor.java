@@ -14,6 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exoreaction.notification.SlackNotificationFacade;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 
@@ -76,6 +80,8 @@ public class SMSDeliveryMonitor {
     public SMSDeliveryMonitor(HazelcastInstance hazelcastInstance, String gridPrefix) {
         this.hazelcastInstance = hazelcastInstance;
         
+        configureMaps(hazelcastInstance.getConfig(), gridPrefix);
+        
         // Initialize Hazelcast distributed maps
         this.successCountMap = hazelcastInstance.getMap(gridPrefix + MAP_PREFIX + "success_count");
         this.failedDeliveriesMap = hazelcastInstance.getMap(gridPrefix + MAP_PREFIX + "failures");
@@ -108,6 +114,28 @@ public class SMSDeliveryMonitor {
             this.scheduler = null;
             log.info("SMSDeliveryMonitor configured as DATA NODE ONLY (reporting disabled)");
         }
+    }
+    
+    private void configureMaps(Config config, String gridPrefix) {
+        // Configure success count map (TTL = 24 hours)
+        MapConfig successConfig = new MapConfig(gridPrefix + MAP_PREFIX + "success_count");
+        successConfig.setTimeToLiveSeconds((int) TimeUnit.HOURS.toSeconds(24));
+        successConfig.getEvictionConfig()
+            .setEvictionPolicy(EvictionPolicy.LRU)
+            .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+            .setSize(100); // Small map, just counters
+        config.addMapConfig(successConfig);
+        
+        // Configure failed deliveries map (TTL = 1 hour)
+        MapConfig failuresConfig = new MapConfig(gridPrefix + MAP_PREFIX + "failures");
+        failuresConfig.setTimeToLiveSeconds((int) TimeUnit.HOURS.toSeconds(1));
+        failuresConfig.getEvictionConfig()
+            .setEvictionPolicy(EvictionPolicy.LRU)
+            .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+            .setSize(10000); // Max 10k failed deliveries per node
+        config.addMapConfig(failuresConfig);
+        
+        log.info("Configured SMS delivery maps with TTL: success=24h, failures=1h");
     }
     
     /**
