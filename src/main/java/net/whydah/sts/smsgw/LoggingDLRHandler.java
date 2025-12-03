@@ -111,7 +111,7 @@ public class LoggingDLRHandler implements Target365DLRHandler {
         if (monitor != null) {
         	    //some extra filter
         		boolean isUnkownPhoneNumber = deliveryReport.getDetailedStatusCode().toUpperCase().contains("UNKNOWNSUBSCRIBER");
-            if(isUnkownPhoneNumber) {
+            if(!isUnkownPhoneNumber) {
             		monitor.recordFailure(deliveryReport);
             }
         		
