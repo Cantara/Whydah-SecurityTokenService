@@ -1305,7 +1305,10 @@ public class UserTokenResource {
 			if(response!=null && !response.isEmpty()) {
 				log.trace("Answer from smsgw: " + response);	
 			}
-			ActivePinRepository.setPin(phoneNo, smsPin, response);
+			
+			String pin = smsPin.replaceFirst(".*?(\\d{4,6}).*", "$1");
+			//String pin = smsPin.substring(0, 4);
+			ActivePinRepository.setPin(phoneNo, pin, response);
 			return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			
 		} catch (Exception ex) {
