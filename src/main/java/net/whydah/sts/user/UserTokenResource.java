@@ -1652,10 +1652,10 @@ public class UserTokenResource {
 	public Response createAndLogOnUser(@PathParam("applicationtokenid") String applicationtokenid,
 			@PathParam("userticket") String userticket,
 			@FormParam("apptoken") String appTokenXml,
-			@FormParam("usercredential") String userCredentialXml,
+			@FormParam("adminUserTokenId") String adminUserTokenId,
 			@FormParam("userxml") String userxml,
 			@FormParam("userTokenLifespan") String userTokenLifespan) throws AppException {
-		log.trace("Response createAndLogOnUser: usercredential:" + userCredentialXml + "thirdpartyuser:" + userxml);
+		log.trace("Response createAndLogOnUser:" + userxml);
 
 		if (ApplicationMode.getApplicationMode() == ApplicationMode.DEV) {
 			return DevModeHelper.return_DEV_MODE_ExampleUserToken(1);
@@ -1670,7 +1670,7 @@ public class UserTokenResource {
 
 		try {
 			//applicationtokenidmap.put(applicationtokenid, applicationtokenid);
-			UserToken userToken = userAuthenticator.createAndLogonUser(applicationtokenid, appTokenXml, userCredentialXml, userxml, userTokenLifespan==null?0:Long.valueOf(userTokenLifespan));
+			UserToken userToken = userAuthenticator.createAndLogonUser(applicationtokenid, appTokenXml, adminUserTokenId, userxml, userTokenLifespan==null?0:Long.valueOf(userTokenLifespan));
 			userticketmap.put(userticket, userToken.getUserTokenId());
 			userToken.setDefcon(ThreatResource.getDEFCON());
 			userToken.setNs2link(appConfig.getProperty("myuri") + "user/" + applicationtokenid + "/validate_usertokenid/" + userToken.getUserTokenId());
