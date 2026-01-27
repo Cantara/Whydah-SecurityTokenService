@@ -42,6 +42,7 @@ public class ActivePinRepository {
     private static final int SMS_RESPONSE_TTL_SECONDS = 3600; // 1 hour
     private static final int USAGE_COUNT_TTL_SECONDS = 300; // 5 minutes
     
+    
     static {
         AppConfig appConfig = new AppConfig();
         String xmlFileName = System.getProperty("hazelcast.config");
@@ -264,21 +265,13 @@ public class ActivePinRepository {
     private static void sendNorwegianSecurityAlert(String phoneNr, int usageCount) {
         try {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
-            String message;
             
-            if (usageCount == SECURITY_ALERT_THRESHOLD) {
-                message = String.format(
-                    "SIKKERHETSVARSLING: Din konto har blitt åpnet %d ganger siden kl %s. " +
-                    "Hvis dette ikke var deg, kontakt support umiddelbart.", 
-                    usageCount, timestamp
-                );
-            } else {
-                message = String.format(
-                    "ADVARSEL: Din konto har nå blitt åpnet %d ganger. " +
-                    "Hvis dette ikke var deg, kontakt support NÅ!", 
-                    usageCount
-                );
+            String pinSecurityMsgTemplate = AppConfig.getProperty("pin-security-warning-format");
+            if(pinSecurityMsgTemplate == null) {
+            		return;
             }
+            
+            String message = String.format(pinSecurityMsgTemplate, usageCount, timestamp);
             
             log.warn("Sending Norwegian security alert to {} (usage: {})", phoneNr, usageCount);
             
