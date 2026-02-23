@@ -5,14 +5,16 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 import net.whydah.sso.config.ApplicationMode;
@@ -26,7 +28,6 @@ import net.whydah.sso.user.types.UserToken;
 @Service
 public class DummyUserAuthenticator implements UserAuthenticator {
     private static final Logger log = LoggerFactory.getLogger(DummyUserAuthenticator.class);
-    private final static DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
 
     public UserToken logonUser(String applicationTokenId, String appTokenXml, String userCredentialXml, long usertookenLifespan) {
@@ -90,13 +91,16 @@ public class DummyUserAuthenticator implements UserAuthenticator {
     }
 
     private String parseUsernameFromUserCredential(String userCredential) {
-
-        XPath xpath = XPathFactory.newInstance().newXPath();
         try {
-            InputSource source = new InputSource(new StringReader(userCredential));
-            String userName = xpath.evaluate("/usercredential/params/username", source).trim();
-            return userName;
-        } catch (XPathExpressionException e) {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            dbf.setExpandEntityReferences(false);
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+            Document doc = builder.parse(new InputSource(new StringReader(userCredential)));
+            XPath xpath = XPathFactory.newInstance().newXPath();
+            return xpath.evaluate("/usercredential/params/username", doc).trim();
+        } catch (Exception e) {
             e.printStackTrace();
             return "";
         }
