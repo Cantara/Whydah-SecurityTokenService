@@ -40,7 +40,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <exoreaction-slack-notification-library.version>1.0.9</exoreaction-slack-notification-library.version>
-        <jackson.version>2.21.0</jackson.version>
     </properties>
 
     <developers>
@@ -313,26 +312,31 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock</artifactId>
-            <version>2.27.2</version>
-            <scope>test</scope>
-        </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/org.wiremock/wiremock -->
+		<dependency>
+		    <groupId>org.wiremock</groupId>
+		    <artifactId>wiremock</artifactId>
+		    <version>3.13.2</version>
+		    <scope>test</scope>
+		</dependency>
         
-        <!-- Add/Update Jackson dependencies to match Slack library version -->
-	    <dependency>
-	        <groupId>com.fasterxml.jackson.core</groupId>
-	        <artifactId>jackson-core</artifactId>
-	        <version>${jackson.version}</version>
-	    </dependency>
+        
+	   <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-core -->
+		<dependency>
+		    <groupId>tools.jackson.core</groupId>
+		    <artifactId>jackson-core</artifactId>
+		    <version>3.1.0</version>
+		    <scope>compile</scope>
+		</dependency>
 	    
 	    <!-- Jackson for JSON -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind -->
+		<dependency>
+		    <groupId>tools.jackson.core</groupId>
+		    <artifactId>jackson-databind</artifactId>
+		    <version>3.1.0</version>
+		    <scope>compile</scope>
+		</dependency>
 
 	  
 	

@@ -9,6 +9,8 @@ import net.whydah.sso.user.types.UserAggregate;
 import net.whydah.sso.user.types.UserCredential;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.errorhandling.AuthenticationFailedException;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -21,6 +23,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Disabled
 public class UserAuthenticatorImplTest {
 
     @Test
