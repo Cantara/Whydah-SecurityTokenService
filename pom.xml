@@ -19,7 +19,7 @@
     <properties>
         <jdk.version>21</jdk.version>
         <service.name>Whydah-SecurityTokenService</service.name>
-        <whydah.admin.sdk.version>2.31.13</whydah.admin.sdk.version>
+        <whydah.admin.sdk.version>3.1.1</whydah.admin.sdk.version>
         <org.valuereporter.agent>1.10.18</org.valuereporter.agent>
         <jersey-version>3.1.11</jersey-version>
         <guice-version>5.1.0</guice-version>
@@ -34,7 +34,7 @@
         <!-- Updated versions for Java 21 support -->
         <mockito.version>5.10.0</mockito.version>
         <byte-buddy.version>1.14.11</byte-buddy.version>
-        <junit.jupiter.version>5.10.2</junit.jupiter.version>
+        <junit.jupiter.version>6.0.3</junit.jupiter.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <additionalparam>-Xdoclint:none</additionalparam>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
