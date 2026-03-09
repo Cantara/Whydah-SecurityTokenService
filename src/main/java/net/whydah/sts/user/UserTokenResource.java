@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
@@ -1821,11 +1822,16 @@ public class UserTokenResource {
 		return isEmpty;
 	}
 
+//	public static String generatePin() {
+//		int i = generator.nextInt(10000) % 10000;
+//		java.text.DecimalFormat f = new java.text.DecimalFormat("0000");
+//		return f.format(i);
+//
+//	}
+	
 	public static String generatePin() {
-		int i = generator.nextInt(10000) % 10000;
-		java.text.DecimalFormat f = new java.text.DecimalFormat("0000");
-		return f.format(i);
-
+	    int pin = ThreadLocalRandom.current().nextInt(10000);
+	    return String.format("%04d", pin);
 	}
 
 	@Path("/{applicationtokenid}/isUserNameFoundInPinMap")
