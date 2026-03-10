@@ -1,0 +1,25 @@
+id: SecurityTokenService
+name: Whydah Security Token Service
+version: 2.31.31-SNAPSHOT
+description: |
+  Core IAM service for the Whydah platform. Issues and validates user tokens and
+  application tokens. Acts as the central authority for authentication in the
+  Whydah ecosystem.
+units:
+  - id: token-service
+    name: Token Service
+    type: service
+    description: Core token issuance and validation logic for user and application tokens.
+    path: src/main/java/net/whydah/sso
+  - id: application-management
+    name: Application Management
+    type: component
+    description: Application registration and credential management within the STS.
+  - id: health
+    name: Health Endpoint
+    type: component
+    description: Health check endpoint for liveness and readiness probing.
+  - id: config
+    name: Service Configuration
+    type: component
+    description: Service configuration binding and environment setup.
