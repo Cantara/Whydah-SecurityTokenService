@@ -48,6 +48,17 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 		this.useradminservice = URI.create(uasAdminUrl);
 
 	}
+	
+	public String getSTSAppTokenId() {
+		return AuthenticatedApplicationTokenRepository.getSTSApplicationToken().getApplicationTokenId();
+	}
+	
+	public String getSTSAppTokenXml() {
+		return ApplicationTokenMapper.toXML(AuthenticatedApplicationTokenRepository.getSTSApplicationToken());
+	}
+	
+	
+	
 
 	@Override
 	public UserToken logonUser(String applicationTokenId, String appTokenXml, final String userCredentialXml, long userTokenLifespan) throws AuthenticationFailedException {
@@ -58,8 +69,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			log.trace("logonUser - Unable to map userCredentialXML - Calling UserAdminService at " + useradminservice + " appTokenXml:" + appTokenXml + " userCredentialXml:" + userCredentialXml);
 
 		}
-
-		UserToken uToken = new CommandVerifyUserCredential(useradminservice, appTokenXml, applicationTokenId, userCredentialXml).execute();
+		//HUY: note that all we should use STS app token to call UAS
+		UserToken uToken = new CommandVerifyUserCredential(useradminservice, getSTSAppTokenXml(), getSTSAppTokenId(), userCredentialXml).execute();
 		if (uToken == null) {
 			throw new AuthenticationFailedException("Authentication failed for user: %s, appTokenId: %s".formatted(userCredentialXml, applicationTokenId));
 		}
@@ -78,7 +89,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 	public UserToken createAndLogonUser(String applicationTokenId, String appTokenXml, String useradminTokenId, String thirdpartyUserXML, long userTokenLifespan) throws AuthenticationFailedException {
 		//TODO: we should verify useradminTokenId
 		log.trace("createAndLogonUser - Calling UserAdminService at with appTokenXml:\n" + appTokenXml + "useradminTokenId:\n" + useradminTokenId + "thirdpartyUserXML:\n" + thirdpartyUserXML);
-		UserToken userToken = new CommandCreateFBUser(useradminservice, appTokenXml, applicationTokenId, thirdpartyUserXML).execute();
+		//HUY: note that all we should use STS app token to call UAS
+		UserToken userToken = new CommandCreateFBUser(useradminservice, getSTSAppTokenXml(), getSTSAppTokenId(), thirdpartyUserXML).execute();
 		return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "usertokenid", userTokenLifespan);
 	}
 
@@ -88,8 +100,8 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 		if (ActivePinRepository.usePin(cellPhone, pin)) {
 			try {
 				//check if the user exists or not, better to avoid misused calls
-				ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
-				Boolean exists = new CommandUserExists(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, cellPhone).execute();
+				
+				Boolean exists = new CommandUserExists(useradminservice, getSTSAppTokenId(), adminUserTokenId, cellPhone).execute();
 				if(exists) {
 					UserToken existingUserToken = AuthenticatedUserTokenRepository.getUserTokenByUserName(cellPhone, applicationTokenId);
 					if(existingUserToken!=null) {
@@ -97,7 +109,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 					} else {
 						//check against UAS
 						String usersQuery = cellPhone;
-						String usersJson = new CommandListUsers(useradminservice, applicationTokenId, adminUserTokenId, usersQuery).execute();
+						String usersJson = new CommandListUsers(useradminservice, getSTSAppTokenId(), adminUserTokenId, usersQuery).execute();
 
 						if (usersJson == null) {
 							log.error("Unable to find any user from the query " + usersQuery);
@@ -118,7 +130,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 						UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
 						if (userTokenIdentity != null) {
 							log.info("Found matching UserIdentity {}", userTokenIdentity);
-							String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
+							String userAggregateJson = new CommandGetUserAggregate(useradminservice, getSTSAppTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
 							UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 							userToken.setSecurityLevel("0");  
 							userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
@@ -127,7 +139,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 					}
 				}
 
-				UserToken userToken = new CommandCreatePinUser(useradminservice, appTokenXml, applicationTokenId, adminUserTokenId, userJson).execute();
+				UserToken userToken = new CommandCreatePinUser(useradminservice, getSTSAppTokenXml(), getSTSAppTokenId(), adminUserTokenId, userJson).execute();
 				if (userToken == null) {
 					throw new AuthenticationFailedException("Pin authentication failed. Status code ");
 				} else {
@@ -143,15 +155,15 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 
 	public UserToken getRefreshedUserToken(String usertokenid) {
 		try {
-			ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
+			
 			String user = appConfig.getProperty("whydah.adminuser.username");
 			String password = appConfig.getProperty("whydah.adminuser.password");
 			UserCredential userCredential = new UserCredential(user, password);
-			UserToken whydahUserAdminUserToken = logonUser(stsApplicationToken.getApplicationTokenId(), ApplicationTokenMapper.toXML(stsApplicationToken), userCredential.toXML());
+			UserToken whydahUserAdminUserToken = logonUser(getSTSAppTokenId(), getSTSAppTokenXml(), userCredential.toXML());
 
-			UserToken oldUserToken = AuthenticatedUserTokenRepository.getUserToken(usertokenid, stsApplicationToken.getApplicationTokenId());
+			UserToken oldUserToken = AuthenticatedUserTokenRepository.getUserToken(usertokenid, getSTSAppTokenId());
 
-			String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), whydahUserAdminUserToken.getUserTokenId(), oldUserToken.getUid()).execute();
+			String userAggregateJson = new CommandGetUserAggregate(useradminservice, getSTSAppTokenId(), whydahUserAdminUserToken.getUserTokenId(), oldUserToken.getUid()).execute();
 
 			UserToken refreshedUserToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 
@@ -174,7 +186,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
 			String usersQuery = cellPhone;
 			// produserer userJson. denne kan inneholde fler users dette er json av
-			String usersJson = new CommandListUsers(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, usersQuery).execute();
+			String usersJson = new CommandListUsers(useradminservice, getSTSAppTokenId(), adminUserTokenId, usersQuery).execute();
 
 			if (usersJson == null) {
 				log.error("Unable to find a user matching the given phonenumber.");
@@ -198,7 +210,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			if (userTokenIdentity != null) {
 				log.info("Found matching UserIdentity {}", userTokenIdentity);
 				
-				String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
+				String userAggregateJson = new CommandGetUserAggregate(useradminservice, getSTSAppTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
 
 				UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 				userToken.setSecurityLevel("0");  // UserIdentity as source = securitylevel=0
@@ -268,8 +280,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			int maxAttempts = 5;
 
 			for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-				ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
-			    usersJson = new CommandListUsers(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, usersQuery).execute();
+			    usersJson = new CommandListUsers(useradminservice, getSTSAppTokenId(), adminUserTokenId, usersQuery).execute();
 			    
 			    if (usersJson != null) {
 			        break; // Success!
@@ -306,8 +317,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			if (userTokenIdentity != null) {
 				log.info("Found matching UserIdentity {}", userTokenIdentity);
 
-				ApplicationToken stsApplicationToken = AuthenticatedApplicationTokenRepository.getSTSApplicationToken();
-				String userAggregateJson = new CommandGetUserAggregate(useradminservice, stsApplicationToken.getApplicationTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
+				String userAggregateJson = new CommandGetUserAggregate(useradminservice, getSTSAppTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
 
 				UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 				userToken.setSecurityLevel("2");  // UserIdentity as source = securitylevel=0
