@@ -14,6 +14,7 @@ import org.valuereporter.activity.ObservedActivity;
 import org.valuereporter.client.MonitorReporter;
 
 import com.exoreaction.notification.SlackNotificationFacade;
+import com.exoreaction.notification.util.ContextMapBuilder;
 import com.fasterxml.jackson.databind.util.LRUMap;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
@@ -420,6 +421,11 @@ public class UserTokenResource {
 		}
 		if(usertokenid == null || usertokenid.isEmpty()) {
 			log.warn("attempt with no usertokenid: "  + usertokenid==null?"null":"empty");
+			SlackNotificationFacade.sendAlarm("attempt with no usertokenid", 
+					ContextMapBuilder.of(
+							"endpoint", "validate_usertokenid",
+							"applicationtokenid", applicationtokenid, 
+							"usertokenid", usertokenid));
 			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
 		}
 		if (AuthenticatedUserTokenRepository.getUserToken(usertokenid, applicationtokenid) != null) {
@@ -504,6 +510,11 @@ public class UserTokenResource {
 		}
 		if(userTokenId == null || userTokenId.isEmpty()) {
 			log.warn("attempt with no usertokenid: "  + userTokenId==null?"null":"empty");
+			SlackNotificationFacade.sendAlarm("attempt with no usertokenid", 
+					ContextMapBuilder.of(
+							"endpoint", "create_userticket_by_usertokenid",
+							"applicationtokenid", applicationtokenid, 
+							"usertokenid", userTokenId));
 			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
 		}
 		
@@ -543,6 +554,13 @@ public class UserTokenResource {
 		}
 		if(userTokenId == null || userTokenId.isEmpty()) {
 			log.warn("attempt with no usertokenid: "  + userTokenId==null?"null":"empty");
+			
+			SlackNotificationFacade.sendAlarm("attempt with no usertokenid", 
+					ContextMapBuilder.of(
+							"endpoint", "get_userticket_by_usertokenid",
+							"applicationtokenid", applicationtokenid, 
+							"usertokenid", userTokenId));
+			
 			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
 		}
 		final UserToken userToken = AuthenticatedUserTokenRepository.getUserToken(userTokenId, applicationtokenid);
@@ -641,6 +659,11 @@ public class UserTokenResource {
 		
 		if(userTokenId == null || userTokenId.isEmpty()) {
 			log.warn("attempt with no usertokenid: "  + userTokenId==null?"null":"empty");
+			SlackNotificationFacade.sendAlarm("attempt with no usertokenid", 
+					ContextMapBuilder.of(
+							"endpoint", "get_usertoken_by_usertokenid",
+							"applicationtokenid", applicationtokenid, 
+							"usertokenid", userTokenId));
 			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
 		}
 
@@ -1120,6 +1143,11 @@ public class UserTokenResource {
 		
 		if(usertokenid == null || usertokenid.isEmpty()) {
 			log.warn("attempt with no usertokenid: "  + usertokenid==null?"null":"empty");
+			SlackNotificationFacade.sendAlarm("attempt with no usertokenid", 
+					ContextMapBuilder.of(
+							"endpoint", "refresh_usertoken",
+							"applicationtokenid", applicationtokenid, 
+							"usertokenid", usertokenid));
 			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
 		}
 
