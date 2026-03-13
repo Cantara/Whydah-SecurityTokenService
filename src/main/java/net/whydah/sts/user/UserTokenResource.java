@@ -298,6 +298,11 @@ public class UserTokenResource {
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
 		try {
+			
+			if(userticket ==null || userticket.isEmpty()) {
+				userticket = UUID.randomUUID().toString();
+			}
+			
 			UserToken userToken = null;
 			if (!userticketmap.containsKey(userticket)) {
 				userToken = userAuthenticator.logonUser(applicationtokenid, appTokenXml, userCredentialXml);
@@ -413,6 +418,10 @@ public class UserTokenResource {
 			//return Response.status(Response.Status.FORBIDDEN).entity("Application authentication not valid.").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
+		if(usertokenid == null || usertokenid.isEmpty()) {
+			log.warn("attempt with no usertokenid: "  + usertokenid==null?"null":"empty");
+			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
+		}
 		if (AuthenticatedUserTokenRepository.getUserToken(usertokenid, applicationtokenid) != null) {
 			log.trace("Verified {}", usertokenid);
 			return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
@@ -493,6 +502,15 @@ public class UserTokenResource {
 			//return Response.status(Response.Status.FORBIDDEN).entity(ILLEGAL_APPLICATION_FOR_THIS_SERVICE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
+		if(userTokenId == null || userTokenId.isEmpty()) {
+			log.warn("attempt with no usertokenid: "  + userTokenId==null?"null":"empty");
+			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
+		}
+		
+		if(userticket ==null || userticket.isEmpty()) {
+			userticket = UUID.randomUUID().toString();
+		}
+		
 		final UserToken userToken = AuthenticatedUserTokenRepository.getUserToken(userTokenId, applicationtokenid);
 		//final UserToken userToken = refreshAndGetThisUser(userTokenId, applicationtokenid);
 		if (userToken == null) {
@@ -522,6 +540,10 @@ public class UserTokenResource {
 			log.warn("createUserTicketByUserTokenId - attempt to access from invalid application. applicationtokenid={}", applicationtokenid);
 			//return Response.status(Response.Status.FORBIDDEN).entity(ILLEGAL_APPLICATION_FOR_THIS_SERVICE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			throw AppExceptionCode.APP_ILLEGAL_7000;
+		}
+		if(userTokenId == null || userTokenId.isEmpty()) {
+			log.warn("attempt with no usertokenid: "  + userTokenId==null?"null":"empty");
+			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
 		}
 		final UserToken userToken = AuthenticatedUserTokenRepository.getUserToken(userTokenId, applicationtokenid);
 		//final UserToken userToken = refreshAndGetThisUser(userTokenId, applicationtokenid);
@@ -599,7 +621,7 @@ public class UserTokenResource {
 	public Response getUserTokenByUserTokenId(@PathParam("applicationtokenid") String applicationtokenid,
 			@FormParam("apptoken") String appTokenXml,
 			@FormParam("usertokenid") String userTokenId) throws AppException {
-		log.trace("getUserTokenByUserTokenId: applicationtokenid={}, usertokenid={}, appTokenXml={}", applicationtokenid, userTokenId, appTokenXml);
+		log.debug("getUserTokenByUserTokenId: applicationtokenid={}, usertokenid={}, appTokenXml={}", applicationtokenid, userTokenId, appTokenXml);
 
 		if (ApplicationMode.getApplicationMode().equals(ApplicationMode.DEV)) {
 			return DevModeHelper.return_DEV_MODE_ExampleUserToken(1);
@@ -616,6 +638,11 @@ public class UserTokenResource {
 			//return Response.status(Response.Status.NOT_ACCEPTABLE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("getUserTokenByUserTokenId - blacklisted - attempt to access with non acceptable usertokenid=" + userTokenId);
 		}*/
+		
+		if(userTokenId == null || userTokenId.isEmpty()) {
+			log.warn("attempt with no usertokenid: "  + userTokenId==null?"null":"empty");
+			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
+		}
 
 		UserToken userToken = AuthenticatedUserTokenRepository.getUserToken(userTokenId, applicationtokenid);
 		
@@ -913,6 +940,11 @@ public class UserTokenResource {
 		}
 
 		try {
+			
+			if(userticket ==null || userticket.isEmpty()) {
+				userticket = UUID.randomUUID().toString();
+			}
+			
 			UserToken userToken = userAuthenticator.logonPinUser(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, pin, userTokenLifespan == null? 0: Long.valueOf(userTokenLifespan));
 			
 			userticketmap.put(userticket, userToken.getUserTokenId());
@@ -1080,10 +1112,15 @@ public class UserTokenResource {
 			//return Response.status(Response.Status.FORBIDDEN).entity("Application authentication not valid.").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			throw AppExceptionCode.APP_ILLEGAL_7000;
 		}
-		if (usertokenid == null) {
-			log.warn("refresh_usertoken - attempt with no usertokenid: Null");
-			//return Response.status(Response.Status.BAD_REQUEST).entity("Missing usertokenid.").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
-			throw AppExceptionCode.MISC_MISSING_PARAMS_9998;
+//		if (usertokenid == null) {
+//			log.warn("refresh_usertoken - attempt with no usertokenid: Null");
+//			//return Response.status(Response.Status.BAD_REQUEST).entity("Missing usertokenid.").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+//			throw AppExceptionCode.MISC_MISSING_PARAMS_9998;
+//		}
+		
+		if(usertokenid == null || usertokenid.isEmpty()) {
+			log.warn("attempt with no usertokenid: "  + usertokenid==null?"null":"empty");
+			throw AppExceptionCode.USER_INVALID_USERTOKENID_6002.setDeveloperMessage("Missing 'usertokenid' param in the request or it is empty");
 		}
 
 		try {
@@ -1673,6 +1710,9 @@ public class UserTokenResource {
 		}
 
 		try {
+			if(userticket ==null || userticket.isEmpty()) {
+				userticket = UUID.randomUUID().toString();
+			}
 			//applicationtokenidmap.put(applicationtokenid, applicationtokenid);
 			UserToken userToken = userAuthenticator.createAndLogonUser(applicationtokenid, appTokenXml, adminUserTokenId, userxml, userTokenLifespan==null?0:Long.valueOf(userTokenLifespan));
 			userticketmap.put(userticket, userToken.getUserTokenId());
@@ -1784,6 +1824,9 @@ public class UserTokenResource {
 		}
 		try {
 
+			if(userticket ==null || userticket.isEmpty()) {
+				userticket = UUID.randomUUID().toString();
+			}
 			UserToken userToken = userAuthenticator.createAndLogonPinUser(applicationtokenid, appTokenXml, adminUserTokenId, cellPhone, pin, newUserjson, userTokenLifespan == null? 0: Long.valueOf(userTokenLifespan));
 			userticketmap.put(userticket, userToken.getUserTokenId());
 			log.debug("createAndLogOnPinUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
@@ -2014,6 +2057,9 @@ public class UserTokenResource {
 		
 		
 		try {
+			if(userticket==null || userticket.isEmpty()) {
+				userticket = UUID.randomUUID().toString();
+			}
 			UserToken userToken = userAuthenticator.logonUserUsingSharedSTSSecret(applicationtokenid, appTokenXml, adminUserTokenId, phoneno, secrect, userTokenLifespan == null? 0: Long.valueOf(userTokenLifespan));
 			userticketmap.put(userticket, userToken.getUserTokenId());
 			log.debug("getUserTokenByTrustedThirdpartyClientAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
