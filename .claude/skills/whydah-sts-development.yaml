@@ -1,0 +1,223 @@
+name: whydah-sts-development
+version: 1.0.0
+description: >
+  Domain and technical skill for developing in the Whydah-SecurityTokenService codebase.
+  Covers token lifecycle (application tokens, user tokens), the two-tier authentication model,
+  Hazelcast distributed session management, JAX-RS endpoint patterns, DI via HK2/Guice,
+  DEV mode testing, and common gotchas.
+
+  Trigger phrases: "whydah sts, security token service, token validation, whydah development,
+  application token, user token, token lifecycle, whydah endpoint, sts endpoint, hazelcast session,
+  whydah authentication, sts authentication, add sts endpoint, whydah api"
+
+context:
+  repo: /src/cantara/Whydah-SecurityTokenService
+  org: cantara
+  package: net.whydah.sts
+
+instructions: |
+  ## Overview
+
+  Whydah-SecurityTokenService (STS) is the central authentication authority for the Whydah IAM
+  ecosystem. It issues XML-based security tokens, manages distributed sessions via Hazelcast,
+  and validates application and user credentials. All other Whydah components depend on STS.
+
+  **Tech stack:** Java 21, Jersey 3.x (Jakarta), Grizzly 4.x, Google Guice/HK2, Hazelcast,
+  Freemarker templates, Whydah-Admin-SDK.
+
+  **Package root:** `net.whydah.sts`
+
+  ## Domain Concepts
+
+  ### Two-Tier Token Model
+  STS uses a two-tier authentication model:
+
+  1. **ApplicationToken** -- issued when an application logs on with `ApplicationCredential` XML.
+     Stored in `AuthenticatedApplicationTokenRepository` (Hazelcast map). Every API call requires
+     a valid `applicationtokenid` in the URL path. Application tokens have configurable TTL
+     (default: `APPLICATION_SESSION_CHECK_INTERVAL_IN_SECONDS * 10`).
+
+  2. **UserToken** -- issued after a user authenticates via username/password or PIN, always
+     scoped to an existing ApplicationToken. Stored in `AuthenticatedUserTokenRepository`
+     (Hazelcast map). Contains uid, username, firstName, lastName, email, cellPhone, personRef,
+     security level, DEFCON status, and a list of `UserApplicationRoleEntry` objects.
+
+  ### Token Lifecycle
+  - **Application logon:** `POST /tokenservice/logon` with `applicationcredential` form param (XML)
+    -> returns ApplicationToken XML with `applicationtokenid` and `expires`.
+  - **App token validation:** `GET /tokenservice/{applicationtokenid}/validate`
+  - **App token renewal:** `POST /tokenservice/{applicationtokenid}/renew_applicationtoken`
+  - **User logon:** `POST /tokenservice/user/{applicationtokenid}/usertoken` with `apptoken` +
+    `usercredential` form params -> returns UserToken XML.
+  - **User ticket flow:** `POST /tokenservice/user/{applicationtokenid}/{userticket}/usertoken` --
+    stores user-ticket mapping for SSO session handover between applications.
+  - **User token validation:** `POST /tokenservice/user/{applicationtokenid}/validate_usertoken` or
+    `GET /tokenservice/user/{applicationtokenid}/validate_usertokenid/{usertokenid}`
+  - **Token exchange:** `GET /tokenservice/user/{applicationtokenid}/{userticket}/get_usertoken_by_usertokenid`
+
+  ### Key Application IDs
+  - `2210` = UIB (UserIdentityBackend) -- stored as `uibApplicationToken`
+  - `2212` = UAS (UserAdminService) -- stored as `uasApplicationToken`
+  - `9999`, `99999` = encryption-enabled applications (special crypto key handling)
+
+  ### User Token Filtering
+  `UserTokenFactory.getFilteredUserToken()` applies three tiers:
+  1. **WhydahAdmin apps** -- get full unfiltered token
+  2. **Anonymous mode** -- if `ANONYMOUSTOKEN=true` and user has no role for the requesting app,
+     returns anonymized token with demographics only
+  3. **Normal apps** -- role list filtered to only roles matching the requesting application ID
+
+  ### Distributed Session Management
+  All token maps are Hazelcast distributed maps with configurable grid prefix:
+  - `{gridprefix}_authenticated_applicationtokens` -- ApplicationToken map
+  - `{gridprefix}_applicationkeys` -- crypto keys per application token
+  - `{gridprefix}activeusertokensmap` -- active UserToken map
+  - `{gridprefix}active_username_usertokenids_map` -- username -> tokenId lookup
+  - `{gridprefix}lastSeenMap` -- email -> last access date
+  - `{gridprefix}userticket_map` -- ticket -> userTokenId for SSO handover
+
+  ## Key Patterns
+
+  ### Endpoint Pattern (JAX-RS / Jersey 3.x with Jakarta)
+  All endpoints use Jakarta EE annotations (`jakarta.ws.rs.*`):
+  ```java
+  @Path("/")
+  public class ApplicationResource {
+      @Inject
+      private UserAuthenticator userAuthenticator;
+
+      @Path("/logon")
+      @POST
+      @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+      @Produces(MediaType.APPLICATION_XML)
+      public Response logonApplication(@FormParam("applicationcredential") String appCredentialXml)
+              throws AppException {
+          // 1. Verify credentials against local config + UAS/UIB
+          // 2. Create ApplicationToken from credential XML
+          // 3. Store in AuthenticatedApplicationTokenRepository
+          // 4. Return ApplicationToken XML
+      }
+  }
+  ```
+  Always add CORS headers: `.header("Access-Control-Allow-Origin", "*")
+  .header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")`
+
+  ### Error Handling Pattern
+  Throw `AppExceptionCode` constants instead of returning error responses:
+  - `AppExceptionCode.APP_ILLEGAL_7000` -- 403 Forbidden, invalid application
+  - `AppExceptionCode.USER_AUTHENTICATION_FAILED_6000` -- 403, auth failed
+  - `AppExceptionCode.USER_VALIDATE_FAILED_6001` -- 401, invalid user token
+  Use `.setDeveloperMessage(msg)` to add context.
+
+  ### Dependency Injection (AppBinder)
+  `AppBinder extends AbstractBinder` configures HK2 bindings:
+  - DEV mode: `DummyUserAuthenticator` (returns test tokens from files)
+  - Production: `UserAuthenticatorImpl` (calls UIB/UAS via HTTP commands)
+
+  ### Authentication Flow (UserAuthenticatorImpl)
+  1. Parses `UserCredential` from XML
+  2. Calls `CommandVerifyUserCredential` to UIB for credential check
+  3. If user already has active session, reuses existing `userTokenId`
+  4. Stores in `AuthenticatedUserTokenRepository.addUserToken()`
+  Supports: password login, PIN login, third-party (Facebook) login, shared STS secret login.
+
+  ### Configuration (AppConfig)
+  Properties loaded from `securitytokenservice.{MODE}.properties`:
+  - `service.port` -- HTTP port (default 9990)
+  - `myuri` -- base URI for token URLs
+  - `useradminservice` -- UIB URL
+  - `application.session.timeout` -- app token TTL
+  - `user.session.timeout` -- user token TTL
+  - `DEFCON` -- defense condition level
+  - `ANONYMOUSTOKEN` -- enable anonymous token filtering
+  - `sslverification` -- "disabled" to skip SSL checks
+  - `hazelcast.config` -- path to Hazelcast XML config
+  - `gridprefix` -- prefix for all Hazelcast map names
+  - `testpage` -- "enabled" to show test page at root
+
+  ## How To: Common Tasks
+
+  ### Add a new endpoint
+  1. If it fits application domain, add method to `ApplicationResource.java`
+  2. If it fits user domain, add method to `UserTokenResource.java`
+  3. For new domain, create new `@Path` resource class and register in `ServiceStarter.startServer()`:
+     ```java
+     .register(new YourNewResource())
+     ```
+  4. Always validate applicationtokenid first:
+     ```java
+     if (!AuthenticatedApplicationTokenRepository.verifyApplicationTokenId(applicationtokenid)) {
+         throw AppExceptionCode.APP_ILLEGAL_7000;
+     }
+     ```
+  5. Add CORS headers to response
+  6. Add `@apiDoc` comments following existing apidoc format
+
+  ### Add a new authentication method
+  1. Add method signature to `UserAuthenticator` interface (with default delegation)
+  2. Implement in `UserAuthenticatorImpl`
+  3. Add corresponding dummy in `DummyUserAuthenticator` for DEV mode
+  4. Create a `Command*` class in `user/authentication/commands/` that extends Hystrix command
+  5. Call from new or existing endpoint in `UserTokenResource`
+
+  ### Modify token content
+  - Application token structure: `ApplicationTokenMapper` (in Whydah-Admin-SDK)
+  - User token structure: `UserTokenMapper` (in Whydah-Admin-SDK)
+  - Token filtering: `UserTokenFactory.getFilteredUserToken()`
+  - Token creation: `UserTokenFactory.fromUserIdentityJson()`
+
+  ## Gotchas & Pitfalls
+
+  1. **Static initialization order:** `AuthenticatedApplicationTokenRepository` and
+     `AuthenticatedUserTokenRepository` use static initializer blocks that create Hazelcast
+     instances. These run when the class is first loaded. If Hazelcast config is missing, it
+     falls back to default config silently.
+
+  2. **Duplicate Hazelcast instances:** Both `UserTokenResource` and
+     `AuthenticatedUserTokenRepository` create their own Hazelcast instances in static blocks.
+     The `UserTokenResource` creates one for `userticket_map`, while the repository creates
+     one for `activeusertokensmap`. They should use the same Hazelcast instance but currently
+     may not. Check `hazelcast.config` property is consistent.
+
+  3. **XML-based API:** All tokens are XML (not JSON). Use `ApplicationTokenMapper.toXML()`
+     and `UserTokenMapper.fromUserTokenXml()`. Do not try to use JSON serialization for tokens.
+
+  4. **DEV mode bypasses everything:** When `ApplicationMode.DEV` is active, `getUserToken()`
+     returns hardcoded test tokens from `.token` files. `DummyUserAuthenticator` skips all
+     credential checks. Never deploy with DEV mode enabled.
+
+  5. **AppConfig is both static and instance:** `AppConfig` has both static methods
+     (`AppConfig.getProperty()`) and instance methods via the singleton pattern. Some code
+     creates `new AppConfig()` instances. Always use the static methods for consistency.
+
+  6. **Thread safety:** Token maps are Hazelcast distributed maps (thread-safe), but
+     `appAuthProcessingMap` in `ApplicationResource` is a `ConcurrentHashMap` used to
+     prevent duplicate authentication processing. The `LRUMap` for failing tokens has fixed
+     size (20 entries).
+
+  7. **Crypto keys:** Applications in `encryptionEnabledApplicationIDs` (9999, 99999) get
+     encrypted responses. The crypto key is generated from `System.currentTimeMillis() +
+     applicationTokenId` which is predictable. This is a known limitation.
+
+  ## Testing
+
+  - Tests are in `src/test/java/net/whydah/sts/`
+  - Use `EnvHelper` to set up test environment variables
+  - `UserTokenTest`, `UserTokenFactoryTest` test token creation and filtering
+  - `ApplicationTokenTest`, `ApplicationTokenExpiresTest` test app token lifecycle
+  - `AuthenticatedUserTokenRepositoryTest` tests the distributed session store
+  - `ServiceStarterTest` tests server startup
+  - DEV mode uses `t_<username>.token` files in project root for test tokens
+  - Build and test: `mvn clean install`
+  - Run locally: `java -jar target/SecurityTokenService-*.jar`
+  - Health check: `curl http://localhost:9998/tokenservice/health`
+
+  ### Test pattern
+  ```java
+  @Test
+  public void testTokenCreation() {
+      UserToken userToken = UserTokenFactory.fromUserIdentityJson(userIdentityJSON);
+      assertNotNull(userToken.getUserTokenId());
+      assertEquals("1", userToken.getSecurityLevel());
+  }
+  ```
