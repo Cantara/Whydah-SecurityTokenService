@@ -2,6 +2,7 @@ package net.whydah.sts.user.authentication;
 
 
 import java.net.URI;
+import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,8 +18,14 @@ import net.whydah.sso.application.types.ApplicationToken;
 import net.whydah.sso.commands.adminapi.user.CommandGetUserAggregate;
 import net.whydah.sso.commands.adminapi.user.CommandListUsers;
 import net.whydah.sso.commands.adminapi.user.CommandUserExists;
+import net.whydah.sso.ddd.model.base.BaseExpires;
+import net.whydah.sso.ddd.model.sso.UserTokenLifespan;
+import net.whydah.sso.ddd.model.user.Issuer;
+import net.whydah.sso.ddd.model.user.Ns2link;
+import net.whydah.sso.ddd.model.user.SecurityLevel;
 import net.whydah.sso.user.mappers.UserCredentialMapper;
 import net.whydah.sso.user.mappers.UserTokenMapper;
+import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import net.whydah.sso.user.types.UserCredential;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
@@ -130,7 +137,7 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 						UserToken userTokenIdentity = getFirstMatch(usersJson, usersQuery);
 						if (userTokenIdentity != null) {
 							log.info("Found matching UserIdentity {}", userTokenIdentity);
-							String userAggregateJson = new CommandGetUserAggregate(useradminservice, getSTSAppTokenId(), adminUserTokenId, userTokenIdentity.getUid()).execute();
+							String userAggregateJson = new CommandGetUserAggregate(useradminservice, getSTSAppTokenId(), adminUserTokenId, cellPhone).execute();
 							UserToken userToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
 							userToken.setSecurityLevel("0");  
 							userToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
@@ -160,18 +167,30 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 			String password = appConfig.getProperty("whydah.adminuser.password");
 			UserCredential userCredential = new UserCredential(user, password);
 			UserToken whydahUserAdminUserToken = logonUser(getSTSAppTokenId(), getSTSAppTokenXml(), userCredential.toXML());
-
+			
 			UserToken oldUserToken = AuthenticatedUserTokenRepository.getUserToken(usertokenid, getSTSAppTokenId());
-
+			if(oldUserToken==null) {
+				return null;
+			}
+			
 			String userAggregateJson = new CommandGetUserAggregate(useradminservice, getSTSAppTokenId(), whydahUserAdminUserToken.getUserTokenId(), oldUserToken.getUid()).execute();
-
-			UserToken refreshedUserToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
-
-			refreshedUserToken.setTimestamp(oldUserToken.getTimestamp());
-			refreshedUserToken.setLifespan(oldUserToken.getLifespan());
-			refreshedUserToken.setUserTokenId(usertokenid);
-
-			return refreshedUserToken;
+			if(userAggregateJson!=null) {
+				UserToken refreshedUserToken = UserTokenMapper.fromUserAggregateJson(userAggregateJson);
+				refreshedUserToken.setLifespan(oldUserToken.getLifespan());
+				refreshedUserToken.setTimestamp(String.valueOf(System.currentTimeMillis()));
+				refreshedUserToken.setUserTokenId(usertokenid);
+				refreshedUserToken.setLastSeen(oldUserToken.getLastSeen());
+				refreshedUserToken.setSecurityLevel(oldUserToken.getSecurityLevel());
+				refreshedUserToken.setIssuer(oldUserToken.getIssuer());
+				refreshedUserToken.setNs2link(oldUserToken.getNs2link());
+				refreshedUserToken.setEncryptedSignature(oldUserToken.getEncryptedSignature());
+				refreshedUserToken.setEmbeddedPublicKey(oldUserToken.getEmbeddedPublicKey());
+				
+				AuthenticatedUserTokenRepository.updateUserToken(refreshedUserToken);
+				
+				return refreshedUserToken;
+			}
+			
 		} catch (Exception e) {
 			log.warn("Unable to use STScredentials to refresh usertoken", e);
 		}

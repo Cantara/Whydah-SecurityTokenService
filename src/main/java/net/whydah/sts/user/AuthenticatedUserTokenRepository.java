@@ -271,6 +271,18 @@ public class AuthenticatedUserTokenRepository {
 		}
 		
 	}
+	
+	public static void updateUserToken(UserToken refreshedUserToken) {
+		if(refreshedUserToken!=null) {
+			log.info("Update userToken with id {}", refreshedUserToken.getUserTokenId());
+			activeusertokensmap.put(refreshedUserToken.getUserTokenId(), refreshedUserToken);
+			if (refreshedUserToken.getUserName() != null) {
+				active_username_usertokenids_map.put(refreshedUserToken.getUserName(), refreshedUserToken.getUserTokenId());
+			}
+			
+			logonReporter.update(refreshedUserToken);
+		}
+	}
 
 	private static void applyUserLifespan(UserToken userToken, long userTokenLifespan) {
 		//userToken.setLifespan(String.valueOf(applicationUserTokenLifespan));
