@@ -1,25 +1,71 @@
-id: SecurityTokenService
-name: Whydah Security Token Service
+kcp_version: "0.10"
+project: whydah-security-token-service
 version: 2.31.31-SNAPSHOT
-description: |
-  Core IAM service for the Whydah platform. Issues and validates user tokens and
-  application tokens. Acts as the central authority for authentication in the
-  Whydah ecosystem.
+updated: "2026-03-15"
+language: en
+license: "Apache-2.0"
+indexing: private
+
 units:
+
   - id: token-service
-    name: Token Service
-    type: service
-    description: Core token issuance and validation logic for user and application tokens.
-    path: src/main/java/net/whydah/sso
+    path: src/main/java/net/whydah/sts
+    intent: "What is the core token issuance and validation logic? The STS is the central IAM authority for Whydah — it issues user tokens and application tokens, and validates them on behalf of all connected services."
+    scope: global
+    audience: [developer, agent]
+    validated: "2026-03-15"
+    triggers: [STS, token, token issuance, token validation, IAM, security token, Whydah auth, central authority]
+
+  - id: user-authentication
+    path: src/main/java/net/whydah/sts/user
+    intent: "How does user authentication and user token issuance work? User credential validation, user token creation and lifecycle management — including user session commands and authentication flows."
+    scope: module
+    audience: [developer, agent]
+    validated: "2026-03-15"
+    depends_on: [token-service]
+    triggers: [user token, user authentication, user session, credential, login, logon, user commands]
+
   - id: application-management
-    name: Application Management
-    type: component
-    description: Application registration and credential management within the STS.
+    path: src/main/java/net/whydah/sts/application
+    intent: "How does application registration and application token issuance work? Application credential management, application token creation and renewal — the mechanism by which services authenticate themselves to Whydah."
+    scope: module
+    audience: [developer, agent]
+    validated: "2026-03-15"
+    depends_on: [token-service]
+    triggers: [application token, application authentication, app token, application registration, service auth, app commands]
+
+  - id: threat-detection
+    path: src/main/java/net/whydah/sts/threat
+    intent: "How does the STS detect and respond to authentication threats? Threat detection logic monitoring for suspicious patterns — brute force, token replay, and anomalous authentication behaviour."
+    scope: module
+    audience: [developer, agent]
+    validated: "2026-03-15"
+    depends_on: [user-authentication]
+    triggers: [threat, threat detection, brute force, replay attack, anomaly, security, suspicious]
+
   - id: health
-    name: Health Endpoint
-    type: component
-    description: Health check endpoint for liveness and readiness probing.
+    path: src/main/java/net/whydah/sts/health
+    intent: "How does the STS report its health and readiness? Health check endpoint for liveness and readiness probing — used by load balancers and orchestration systems."
+    scope: module
+    audience: [developer, agent]
+    validated: "2026-03-15"
+    triggers: [health, liveness, readiness, health check, probe, monitoring, status]
+
   - id: config
-    name: Service Configuration
-    type: component
-    description: Service configuration binding and environment setup.
+    path: src/main/java/net/whydah/sts/config
+    intent: "How is the STS configured? Service configuration binding — property resolution for STS endpoints, UIB connection, token lifetimes, and environment-specific settings."
+    scope: module
+    audience: [developer, agent]
+    validated: "2026-03-15"
+    triggers: [config, configuration, properties, UIB endpoint, token lifetime, environment, setup]
+
+relationships:
+  - from: user-authentication
+    to: token-service
+    type: depends_on
+  - from: application-management
+    to: token-service
+    type: depends_on
+  - from: threat-detection
+    to: user-authentication
+    type: depends_on
