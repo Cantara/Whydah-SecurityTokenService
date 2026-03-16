@@ -98,6 +98,9 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 		log.trace("createAndLogonUser - Calling UserAdminService at with appTokenXml:\n" + appTokenXml + "useradminTokenId:\n" + useradminTokenId + "thirdpartyUserXML:\n" + thirdpartyUserXML);
 		//HUY: note that all we should use STS app token to call UAS
 		UserToken userToken = new CommandCreateFBUser(useradminservice, getSTSAppTokenXml(), getSTSAppTokenId(), thirdpartyUserXML).execute();
+		if (userToken == null) {
+			throw new AuthenticationFailedException("createAndLogonUser - CommandCreateFBUser returned null, user creation failed for thirdpartyUserXML=" + thirdpartyUserXML);
+		}
 		return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationTokenId, "usertokenid", userTokenLifespan);
 	}
 

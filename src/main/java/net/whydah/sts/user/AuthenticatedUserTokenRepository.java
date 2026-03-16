@@ -303,6 +303,10 @@ public class AuthenticatedUserTokenRepository {
 	}
 
 	public static UserToken addUserToken(UserToken userToken, String applicationTokenId, String authType, long customLifespan) {
+		if (userToken == null) {
+			log.error("addUserToken called with null userToken - applicationTokenId={}, authType={}", applicationTokenId, authType);
+			return null;
+		}
 		return addUserToken(userToken, applicationTokenId, authType, true, customLifespan);
 	}
 
