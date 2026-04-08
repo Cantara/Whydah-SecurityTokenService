@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,14 +34,16 @@ public class ActivePinRepository {
     private static IMap<String, String> pinMap;
     private static IMap<String, String> smsResponseLogMap;
     private static IMap<String, Integer> pinUsageCountMap;
-    
+    private static IMap<String, String> invalidPinAlarmMap;
+
     // Configurable threshold for security alerts
     private static final int SECURITY_ALERT_THRESHOLD = 5;
-    
+
     // TTL configurations (in seconds)
     private static final int PIN_TTL_SECONDS = 300; // 5 minutes
     private static final int SMS_RESPONSE_TTL_SECONDS = 3600; // 1 hour
     private static final int USAGE_COUNT_TTL_SECONDS = 300; // 5 minutes
+    private static final int INVALID_PIN_ALARM_DEDUP_SECONDS = 30; // suppress duplicate alarms per phone
     
     
     static {
@@ -69,6 +72,7 @@ public class ActivePinRepository {
         configurePinMap(hazelcastConfig, gridPrefix);
         configureSmsResponseMap(hazelcastConfig, gridPrefix);
         configurePinUsageCountMap(hazelcastConfig, gridPrefix);
+        configureInvalidPinAlarmMap(hazelcastConfig, gridPrefix);
         
         HazelcastInstance hazelcastInstance;
         try {
@@ -81,6 +85,7 @@ public class ActivePinRepository {
         pinMap = hazelcastInstance.getMap(gridPrefix + "pinMap");
         smsResponseLogMap = hazelcastInstance.getMap(gridPrefix + "smsResponseLogMap");
         pinUsageCountMap = hazelcastInstance.getMap(gridPrefix + "pinUsageCountMap");
+        invalidPinAlarmMap = hazelcastInstance.getMap(gridPrefix + "invalidPinAlarmMap");
         
         log.info("Connected to map: {}pinMap (size: {})", gridPrefix, pinMap.size());
         log.info("Connected to map: {}smsResponseLogMap (size: {})", gridPrefix, smsResponseLogMap.size());
@@ -146,10 +151,21 @@ public class ActivePinRepository {
             .setSize(10000); // Max 10k entries per node
         
         config.addMapConfig(mapConfig);
-        log.info("Configured pinUsageCountMap with TTL={}s, eviction=LRU, maxSize=10k", 
+        log.info("Configured pinUsageCountMap with TTL={}s, eviction=LRU, maxSize=10k",
                 USAGE_COUNT_TTL_SECONDS);
     }
-    
+
+    private static void configureInvalidPinAlarmMap(Config config, String gridPrefix) {
+        MapConfig mapConfig = new MapConfig(gridPrefix + "invalidPinAlarmMap");
+        mapConfig.setTimeToLiveSeconds(INVALID_PIN_ALARM_DEDUP_SECONDS);
+        mapConfig.getEvictionConfig()
+            .setEvictionPolicy(EvictionPolicy.LRU)
+            .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+            .setSize(10000);
+        config.addMapConfig(mapConfig);
+        log.info("Configured invalidPinAlarmMap with TTL={}s (dedup window)", INVALID_PIN_ALARM_DEDUP_SECONDS);
+    }
+
     /**
      * Clean up invalid entries on startup.
      */
@@ -290,12 +306,62 @@ public class ActivePinRepository {
     }
     
     private static void sendInvalidPinAlert(String phoneNr, String submittedPin, String storedPin) {
-        SlackNotificationFacade.sendAlarm("Illegal pin logon attempted.", 
+        if (isLikelyTypo(submittedPin, storedPin)) {
+            log.debug("Suppressing invalid-pin alarm for phone {} - likely typo ({} vs {})",
+                    phoneNr, submittedPin, storedPin);
+            return;
+        }
+        String alarmKey = phoneNr + ":" + submittedPin;
+        String previous = invalidPinAlarmMap.putIfAbsent(alarmKey, "1",
+                INVALID_PIN_ALARM_DEDUP_SECONDS, TimeUnit.SECONDS);
+        if (previous != null) {
+            log.debug("Suppressing duplicate invalid-pin alarm for phone {} (cluster dedup)", phoneNr);
+            return;
+        }
+        SlackNotificationFacade.sendAlarm("Illegal pin logon attempted.",
             ContextMapBuilder.of(
                 "phone", phoneNr,
                 "submitted_pin", submittedPin,
                 "stored_pin", storedPin
             ));
+    }
+
+    /**
+     * Returns true if the two 4-digit PINs differ by only 1 digit position,
+     * or by exactly 2 adjacent positions (transposition) — both indicate a likely typo.
+     */
+    static boolean isLikelyTypo(String submitted, String stored) {
+        if (submitted == null || stored == null || submitted.length() != stored.length()) {
+            return false;
+        }
+        int diffCount = 0;
+        int firstDiffPos = -1;
+        for (int i = 0; i < submitted.length(); i++) {
+            if (submitted.charAt(i) != stored.charAt(i)) {
+                diffCount++;
+                if (firstDiffPos == -1) {
+                    firstDiffPos = i;
+                }
+            }
+        }
+        if (diffCount == 1) {
+            return true; // single wrong digit
+        }
+        if (diffCount == 2) {
+            // adjacent transposition: e.g. "4850" vs "4580"
+            int secondDiffPos = -1;
+            for (int i = firstDiffPos + 1; i < submitted.length(); i++) {
+                if (submitted.charAt(i) != stored.charAt(i)) {
+                    secondDiffPos = i;
+                    break;
+                }
+            }
+            if (secondDiffPos == firstDiffPos + 1) {
+                return submitted.charAt(firstDiffPos) == stored.charAt(secondDiffPos)
+                    && submitted.charAt(secondDiffPos) == stored.charAt(firstDiffPos);
+            }
+        }
+        return false;
     }
    
     public static Map<String, String> getPinMap() {

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,17 +37,21 @@ public class SMSDeliveryMonitor {
     // Hazelcast distributed maps
     private final IMap<String, Long> successCountMap;
     private final IMap<String, FailedDelivery> failedDeliveriesMap;
-    
+    private final IMap<String, Integer> failureCountByPhoneMap;
+    private final IMap<String, String> persistentFailureAlertSentMap;
+
     private final HazelcastInstance hazelcastInstance;
     private final ScheduledExecutorService scheduler;
     private final long reportIntervalMinutes;
     private final boolean enableReporting; // Only true on the designated reporting node
-    
+    private final int persistentFailureThreshold;
+
     private volatile boolean running = false;
     private volatile LocalDateTime lastReportTime;
-    
+
     private static final String SUCCESS_COUNT_KEY = "sms_success_count";
     private static final String MAP_PREFIX = "sms_delivery_";
+    private static final int PERSISTENT_FAILURE_ALERT_COOLDOWN_HOURS = 24;
     
     /**
      * Represents a failed SMS delivery (stored in Hazelcast).
@@ -81,24 +86,26 @@ public class SMSDeliveryMonitor {
         this.hazelcastInstance = hazelcastInstance;
         
         configureMaps(hazelcastInstance.getConfig(), gridPrefix);
-        
+
         // Initialize Hazelcast distributed maps
         this.successCountMap = hazelcastInstance.getMap(gridPrefix + MAP_PREFIX + "success_count");
         this.failedDeliveriesMap = hazelcastInstance.getMap(gridPrefix + MAP_PREFIX + "failures");
-        
-        log.info("Connected to Hazelcast maps: {}{} (success count), {}{} (failures)",
-                gridPrefix, MAP_PREFIX + "success_count",
-                gridPrefix, MAP_PREFIX + "failures");
-        
+        this.failureCountByPhoneMap = hazelcastInstance.getMap(gridPrefix + MAP_PREFIX + "failure_count_by_phone");
+        this.persistentFailureAlertSentMap = hazelcastInstance.getMap(gridPrefix + MAP_PREFIX + "persistent_alert_sent");
+
+        log.info("Connected to Hazelcast maps: success_count, failures, failure_count_by_phone, persistent_alert_sent");
+
         // Initialize success counter if not exists
         successCountMap.putIfAbsent(SUCCESS_COUNT_KEY, 0L);
-        
+
         // Load configuration
         AppConfig appConfig = new AppConfig();
-        this.reportIntervalMinutes = getLongProperty(appConfig, 
+        this.reportIntervalMinutes = getLongProperty(appConfig,
                 "sms.monitor.interval.minutes", 5L);
-        this.enableReporting = getBooleanProperty(appConfig, 
+        this.enableReporting = getBooleanProperty(appConfig,
                 "sms.monitor.notifications.enabled", false);
+        this.persistentFailureThreshold = (int) getLongProperty(appConfig,
+                "sms.monitor.persistent.failure.threshold", 3L);
         
         this.lastReportTime = LocalDateTime.now();
         
@@ -135,7 +142,25 @@ public class SMSDeliveryMonitor {
             .setSize(10000); // Max 10k failed deliveries per node
         config.addMapConfig(failuresConfig);
         
-        log.info("Configured SMS delivery maps with TTL: success=24h, failures=1h");
+        // Per-phone failure count — rolling 24h window
+        MapConfig failureCountConfig = new MapConfig(gridPrefix + MAP_PREFIX + "failure_count_by_phone");
+        failureCountConfig.setTimeToLiveSeconds((int) TimeUnit.HOURS.toSeconds(24));
+        failureCountConfig.getEvictionConfig()
+            .setEvictionPolicy(EvictionPolicy.LRU)
+            .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+            .setSize(10000);
+        config.addMapConfig(failureCountConfig);
+
+        // Dedup map — prevents re-alerting the same phone within 24h
+        MapConfig alertSentConfig = new MapConfig(gridPrefix + MAP_PREFIX + "persistent_alert_sent");
+        alertSentConfig.setTimeToLiveSeconds((int) TimeUnit.HOURS.toSeconds(PERSISTENT_FAILURE_ALERT_COOLDOWN_HOURS));
+        alertSentConfig.getEvictionConfig()
+            .setEvictionPolicy(EvictionPolicy.LRU)
+            .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+            .setSize(10000);
+        config.addMapConfig(alertSentConfig);
+
+        log.info("Configured SMS delivery maps with TTL: success=24h, failures=1h, failure_count_by_phone=24h, persistent_alert_sent=24h");
     }
     
     /**
@@ -226,7 +251,6 @@ public class SMSDeliveryMonitor {
      */
     public void recordFailure(Target365DeliveryReport deliveryReport) {
         try {
-            // Store details of failed delivery in Hazelcast map
             String key = deliveryReport.getTransactionId() + "_" + System.currentTimeMillis();
             FailedDelivery failure = new FailedDelivery(
                 deliveryReport.getRecipient(),
@@ -234,15 +258,53 @@ public class SMSDeliveryMonitor {
                 deliveryReport.getDetailedStatusCode(),
                 deliveryReport.getTransactionId()
             );
-            
             failedDeliveriesMap.put(key, failure);
-            
-            log.debug("Recorded failed SMS delivery. Current cluster failures: {}", 
-                    failedDeliveriesMap.size());
-                    
+
+            // Track per-phone failure count (24h rolling window)
+            String phone = deliveryReport.getRecipient();
+            int count = incrementPhoneFailureCount(phone);
+            log.debug("Recorded failed SMS delivery for {}. Phone 24h count: {}, cluster total: {}",
+                    phone, count, failedDeliveriesMap.size());
+
+            if (count >= persistentFailureThreshold) {
+                checkAndAlertPersistentFailure(phone, count, failure.detailedStatusCode);
+            }
         } catch (Exception e) {
             log.error("Error recording failure to Hazelcast: {}", e.getMessage(), e);
         }
+    }
+
+    private int incrementPhoneFailureCount(String phone) {
+        failureCountByPhoneMap.lock(phone);
+        try {
+            int current = failureCountByPhoneMap.getOrDefault(phone, 0) + 1;
+            failureCountByPhoneMap.put(phone, current,
+                    PERSISTENT_FAILURE_ALERT_COOLDOWN_HOURS, TimeUnit.HOURS);
+            return current;
+        } finally {
+            failureCountByPhoneMap.unlock(phone);
+        }
+    }
+
+    private void checkAndAlertPersistentFailure(String phone, int count, String lastErrorCode) {
+        String previous = persistentFailureAlertSentMap.putIfAbsent(phone, String.valueOf(count),
+                PERSISTENT_FAILURE_ALERT_COOLDOWN_HOURS, TimeUnit.HOURS);
+        if (previous != null) {
+            log.debug("Persistent SMS failure alert already sent for {} today (count={})", phone, count);
+            return;
+        }
+        log.warn("Persistent SMS delivery failures for {} — {} failures in 24h (threshold={})",
+                phone, count, persistentFailureThreshold);
+        Map<String, Object> context = new HashMap<>();
+        context.put("phone", phone);
+        context.put("failureCount", count);
+        context.put("threshold", persistentFailureThreshold);
+        context.put("lastErrorCode", lastErrorCode);
+        context.put("window", "24 hours");
+        context.put("timestamp", LocalDateTime.now().format(TIME_FORMATTER));
+        SlackNotificationFacade.sendAlarm(
+                String.format("Phone %s has %d SMS delivery failures in the last 24h", phone, count),
+                context);
     }
     
     /**
@@ -301,7 +363,10 @@ public class SMSDeliveryMonitor {
             if (failureCount > 0) {
                 reportFailures(failureCount, failures);
             }
-            
+
+            // Include persistent offenders summary (numbers with >= threshold failures in 24h)
+            reportPersistentOffenders();
+
             // Clear failed deliveries after reporting
             failedDeliveriesMap.clear();
             
@@ -381,6 +446,39 @@ public class SMSDeliveryMonitor {
         }
     }
     
+    private void reportPersistentOffenders() {
+        try {
+            List<Map.Entry<String, Integer>> offenders = failureCountByPhoneMap.entrySet().stream()
+                    .filter(e -> e.getValue() >= persistentFailureThreshold)
+                    .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                    .collect(Collectors.toList());
+
+            if (offenders.isEmpty()) {
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<String, Integer> entry : offenders) {
+                sb.append(String.format("\n  • %s — %d failures in 24h", entry.getKey(), entry.getValue()));
+            }
+
+            Map<String, Object> context = new HashMap<>();
+            context.put("offenderCount", offenders.size());
+            context.put("threshold", persistentFailureThreshold);
+            context.put("offenders", sb.toString());
+            context.put("timestamp", LocalDateTime.now().format(TIME_FORMATTER));
+
+            String message = String.format(
+                    "%d phone number(s) with persistent SMS delivery failures (>= %d in 24h)",
+                    offenders.size(), persistentFailureThreshold);
+
+            log.warn("Persistent SMS failure offenders: {}", message);
+            SlackNotificationFacade.sendAlarm(message, context);
+        } catch (Exception e) {
+            log.error("Failed to report persistent SMS offenders to Slack: {}", e.getMessage(), e);
+        }
+    }
+
     /**
      * Format failure details for Slack message.
      */
