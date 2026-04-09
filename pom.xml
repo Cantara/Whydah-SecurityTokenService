@@ -39,7 +39,7 @@
         <additionalparam>-Xdoclint:none</additionalparam>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <exoreaction-slack-notification-library.version>1.0.15</exoreaction-slack-notification-library.version>
+        <exoreaction-slack-notification-library.version>1.0.17</exoreaction-slack-notification-library.version>
     </properties>
 
     <developers>
