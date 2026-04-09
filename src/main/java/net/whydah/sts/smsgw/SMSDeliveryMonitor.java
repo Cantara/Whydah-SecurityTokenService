@@ -50,6 +50,7 @@ public class SMSDeliveryMonitor {
     private volatile LocalDateTime lastReportTime;
 
     private static final String SUCCESS_COUNT_KEY = "sms_success_count";
+    private static final String SUMMARY_OFFENDERS_KEY = "_summary_offenders";
     private static final String MAP_PREFIX = "sms_delivery_";
     private static final int PERSISTENT_FAILURE_ALERT_COOLDOWN_HOURS = 24;
     
@@ -229,7 +230,6 @@ public class SMSDeliveryMonitor {
      */
     public void recordSuccess(Target365DeliveryReport deliveryReport) {
         try {
-            // Atomically increment the success counter in Hazelcast
             successCountMap.lock(SUCCESS_COUNT_KEY);
             try {
                 Long currentCount = successCountMap.get(SUCCESS_COUNT_KEY);
@@ -237,10 +237,25 @@ public class SMSDeliveryMonitor {
             } finally {
                 successCountMap.unlock(SUCCESS_COUNT_KEY);
             }
-            
-            log.debug("Recorded successful SMS delivery. Current cluster total: {}", 
-                    successCountMap.get(SUCCESS_COUNT_KEY));
-                    
+
+            // If this phone was a persistent offender, clear it immediately on recovery.
+            // The next reportPersistentOffenders() cycle will detect the set changed and fire
+            // an updated summary alarm automatically.
+            String phone = deliveryReport.getRecipient();
+            failureCountByPhoneMap.lock(phone);
+            try {
+                if (failureCountByPhoneMap.containsKey(phone)) {
+                    failureCountByPhoneMap.remove(phone);
+                    persistentFailureAlertSentMap.remove(phone); // re-arm per-phone alert if failures resume
+                    log.info("Phone {} delivered successfully — cleared from persistent failure tracking", phone);
+                }
+            } finally {
+                failureCountByPhoneMap.unlock(phone);
+            }
+
+            log.debug("Recorded successful SMS delivery for {}. Cluster total: {}",
+                    phone, successCountMap.get(SUCCESS_COUNT_KEY));
+
         } catch (Exception e) {
             log.error("Error recording success to Hazelcast: {}", e.getMessage(), e);
         }
@@ -453,9 +468,28 @@ public class SMSDeliveryMonitor {
                     .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                     .collect(Collectors.toList());
 
-            if (offenders.isEmpty()) {
+            // Compute current offender set as a canonical sorted string for comparison.
+            String currentSet = offenders.stream()
+                    .map(Map.Entry::getKey)
+                    .sorted()
+                    .collect(Collectors.joining(","));
+
+            // Compare against the last reported set — only fire when the set changes
+            // (phone added or recovered). No time-based re-alerting.
+            String lastReportedSet = persistentFailureAlertSentMap.get(SUMMARY_OFFENDERS_KEY);
+            if (currentSet.equals(lastReportedSet != null ? lastReportedSet : "")) {
+                log.debug("Persistent SMS offender set unchanged — skipping report");
                 return;
             }
+
+            // Persist the new set. Use Integer.MAX_VALUE TTL to override the map-level
+            // 24h default — this key must live until the set actually changes.
+            if (currentSet.isEmpty()) {
+                persistentFailureAlertSentMap.remove(SUMMARY_OFFENDERS_KEY);
+                return; // offenders all cleared — no alarm needed
+            }
+            persistentFailureAlertSentMap.put(SUMMARY_OFFENDERS_KEY, currentSet,
+                    Integer.MAX_VALUE, TimeUnit.SECONDS);
 
             StringBuilder sb = new StringBuilder();
             for (Map.Entry<String, Integer> entry : offenders) {
