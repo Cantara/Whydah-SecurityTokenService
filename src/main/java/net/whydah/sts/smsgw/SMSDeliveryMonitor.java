@@ -48,6 +48,8 @@ public class SMSDeliveryMonitor {
 
     private volatile boolean running = false;
     private volatile LocalDateTime lastReportTime;
+    /** JVM-level dedup for the persistent-offenders summary alarm. Not Hazelcast — survives map eviction/TTL issues. */
+    private volatile String lastReportedOffenderSet = null;
 
     private static final String SUCCESS_COUNT_KEY = "sms_success_count";
     private static final String SUMMARY_OFFENDERS_KEY = "_summary_offenders";
@@ -475,19 +477,20 @@ public class SMSDeliveryMonitor {
                     .collect(Collectors.joining(","));
 
             // Compare against the last reported set — only fire when the set changes
-            // (phone added or recovered). No time-based re-alerting.
-            String lastReportedSet = persistentFailureAlertSentMap.get(SUMMARY_OFFENDERS_KEY);
-            if (currentSet.equals(lastReportedSet != null ? lastReportedSet : "")) {
+            // (phone added or recovered). Uses a JVM-level field so this is immune to
+            // Hazelcast TTL eviction or map state being wiped on restart.
+            String effectiveLast = lastReportedOffenderSet != null ? lastReportedOffenderSet : "";
+            if (currentSet.equals(effectiveLast)) {
                 log.debug("Persistent SMS offender set unchanged — skipping report");
                 return;
             }
 
-            // Persist the new set. Use Integer.MAX_VALUE TTL to override the map-level
-            // 24h default — this key must live until the set actually changes.
             if (currentSet.isEmpty()) {
+                lastReportedOffenderSet = null;
                 persistentFailureAlertSentMap.remove(SUMMARY_OFFENDERS_KEY);
                 return; // offenders all cleared — no alarm needed
             }
+            lastReportedOffenderSet = currentSet;
             persistentFailureAlertSentMap.put(SUMMARY_OFFENDERS_KEY, currentSet,
                     Integer.MAX_VALUE, TimeUnit.SECONDS);
 
