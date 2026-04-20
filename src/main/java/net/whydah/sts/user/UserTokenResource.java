@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
@@ -1344,8 +1346,20 @@ public class UserTokenResource {
 				log.trace("Answer from smsgw: " + response);	
 			}
 			
-			String pin = smsPin.replaceFirst(".*?(\\d{4,6}).*", "$1");
-			//String pin = smsPin.substring(0, 4);
+			Matcher pinMatcher = Pattern.compile("#(\\d{4,6})").matcher(smsPin);
+			String pin = pinMatcher.find() ? pinMatcher.group(1) : null;
+			if (pin == null) {
+				// Fallback: find first standalone 4-6 digit sequence not part of a domain (e.g. 1881.no)
+				Matcher fallback = Pattern.compile("(?<!\\d)(\\d{4,6})(?!\\d)(?!\\.)").matcher(smsPin);
+				if (fallback.find()) {
+					pin = fallback.group(1);
+					log.warn("sendSMSPin: no #PIN pattern found, using fallback pin extraction for phone {}", phoneNo);
+				}
+			}
+			if (pin == null) {
+				log.warn("sendSMSPin: could not extract PIN from smsPin for phone {}", phoneNo);
+				return Response.ok("{\"result\": \"false\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			}
 			ActivePinRepository.setPin(phoneNo, pin, response);
 			return Response.ok("{\"result\": \"true\"}").header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
 			
