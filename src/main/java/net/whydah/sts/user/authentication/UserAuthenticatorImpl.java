@@ -148,7 +148,6 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 						}
 					}
 				}
-
 				UserToken userToken = new CommandCreatePinUser(useradminservice, getSTSAppTokenXml(), getSTSAppTokenId(), adminUserTokenId, userJson).execute();
 				if (userToken == null) {
 					throw new AuthenticationFailedException("Pin authentication failed. Status code ");
@@ -358,4 +357,20 @@ public class UserAuthenticatorImpl implements UserAuthenticator {
 	}
 
 
+	@Override
+	public UserToken createUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml, String adminUserTokenId, String userjson, String secret, long userTokenLifespan) {
+		log.info("logonUserUsingSharedSTSSecret() called with " + "applicationtokenid = [" + applicationtokenid + "], appTokenXml = [" + appTokenXml + "], userjson = [" + userjson + "]");
+		if (AppConfig.getProperty("ssolwa_sts_shared_secrect").equals(secret)) {
+			
+			UserToken userToken = new CommandCreatePinUser(useradminservice, getSTSAppTokenXml(), getSTSAppTokenId(), adminUserTokenId, userjson).execute();
+			if (userToken == null) {
+				throw new AuthenticationFailedException("Pin authentication failed. Status code ");
+			} else {
+				return AuthenticatedUserTokenRepository.addUserToken(userToken, applicationtokenid, "pin", userTokenLifespan);
+			}
+		}  else {
+			log.warn("logonUserUsingSharedSTSSecret, illegal attempted");
+			throw new AuthenticationFailedException("Pin authentication failed. Status code ");
+		}
+	}
 }

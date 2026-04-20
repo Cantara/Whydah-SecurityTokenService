@@ -37,4 +37,6 @@ public interface UserAuthenticator {
     }
     
     UserToken logonUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml, String adminUserTokenIdparam, String cellPhone, String secret, long userTokenLifespan);
+
+	UserToken createUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml, String adminUserTokenId, String userjson, String secret, long userTokenLifespan);
 }

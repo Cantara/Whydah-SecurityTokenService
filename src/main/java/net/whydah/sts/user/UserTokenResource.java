@@ -2087,4 +2087,53 @@ public class UserTokenResource {
 
 
 	}
+	
+	@Path("/{applicationtokenid}/{userticket}/create_usertoken_by_shared_secrect")
+	@POST
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_XML)
+	public Response createUserTokenByUsingASecrect(
+			@PathParam("applicationtokenid") String applicationtokenid,
+			@PathParam("userticket") String userticket,
+			@FormParam("adminUserTokenId") String adminUserTokenId,
+			@FormParam("apptoken") String appTokenXml,
+			@FormParam("userJson") String userJson,
+			@FormParam("secrect") String secrect,
+			@FormParam("userTokenLifespan") String userTokenLifespan
+			) throws AppException {
+
+		log.trace("getUserTokenByUsingASecrect() called with " + "applicationtokenid = [" + applicationtokenid + "], userticket = [" + userticket + "], appTokenXml = [" + appTokenXml + "], userJson = [" + userJson + "], secrect = [" + secrect + "]");
+
+		if (isEmpty(appTokenXml) || isEmpty(secrect) || isEmpty(userJson)) {
+			throw AppExceptionCode.MISC_MISSING_PARAMS_9998;
+		}
+
+		if (ApplicationMode.getApplicationMode().equals(ApplicationMode.DEV)) {
+			return DevModeHelper.return_DEV_MODE_ExampleUserToken(1);
+		}
+
+		// Verify calling application
+		if (!UserTokenFactory.verifyApplicationToken(applicationtokenid, appTokenXml)) {
+			log.warn("getUserTokenByUserTicket - attempt to access from invalid application. applicationtokenid={}", applicationtokenid);
+			//return Response.status(Response.Status.FORBIDDEN).entity(ILLEGAL_APPLICATION_FOR_THIS_SERVICE).header(ACCESS_CONTROL_ALLOW_ORIGIN, "*").header(ACCESS_CONTROL_ALLOW_METHODS, GET_POST_DELETE_PUT).build();
+			throw AppExceptionCode.APP_ILLEGAL_7000;
+		}
+		
+		
+		try {
+			if(userticket==null || userticket.isEmpty()) {
+				userticket = UUID.randomUUID().toString();
+			}
+			UserToken userToken = userAuthenticator.createUserUsingSharedSTSSecret(applicationtokenid, appTokenXml, adminUserTokenId, userJson, secrect, userTokenLifespan == null? 0: Long.valueOf(userTokenLifespan));
+			userticketmap.put(userticket, userToken.getUserTokenId());
+			log.debug("getUserTokenByTrustedThirdpartyClientAndLogonUser Added ticket:{} for usertoken:{} username: {}", userticket, userToken.getUserTokenId(), userToken.getUserName());
+			return createUserTokenResponse(applicationtokenid, userToken);
+
+		} catch (AuthenticationFailedException ae) {
+			log.warn("getUserToken - User authentication failed");
+			throw AppExceptionCode.USER_LOGIN_PIN_FAILED_6004.setDeveloperMessage(ae.getMessage());
+		}
+
+
+	}
 }

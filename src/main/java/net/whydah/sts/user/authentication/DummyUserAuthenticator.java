@@ -126,4 +126,13 @@ public class DummyUserAuthenticator implements UserAuthenticator {
 		return null;
 	}
 
+	@Override
+	public UserToken createUserUsingSharedSTSSecret(String applicationtokenid, String appTokenXml,
+			String adminUserTokenId, String userjson, String secret, long userTokenLifespan) {
+		if (ApplicationMode.getApplicationMode().equalsIgnoreCase(ApplicationMode.DEV)) {
+			return new UserToken();
+		}
+		return null;
+	}
+
 }
