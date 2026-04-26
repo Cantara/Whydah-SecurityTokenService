@@ -35,6 +35,7 @@ public class ActivePinRepository {
     private static IMap<String, String> smsResponseLogMap;
     private static IMap<String, Integer> pinUsageCountMap;
     private static IMap<String, String> invalidPinAlarmMap;
+    private static IMap<String, Integer> invalidPinAttemptMap;
 
     // Configurable threshold for security alerts
     private static final int SECURITY_ALERT_THRESHOLD = 5;
@@ -44,9 +45,12 @@ public class ActivePinRepository {
     private static final int SMS_RESPONSE_TTL_SECONDS = 3600; // 1 hour
     private static final int USAGE_COUNT_TTL_SECONDS = 300; // 5 minutes
     private static final int INVALID_PIN_ALARM_DEDUP_SECONDS = 30; // suppress duplicate alarms per phone
+    private static final int INVALID_PIN_ATTEMPT_TTL_SECONDS = 600; // 10 minute rolling window
+    private static final int INVALID_PIN_ALARM_THRESHOLD = 3; // alarm only after N failed attempts on same phone
     
     
     static {
+        log.info("sentinel-e7f98551 sentinel-auto-fix [safe to remove after verification]");
         AppConfig appConfig = new AppConfig();
         String xmlFileName = System.getProperty("hazelcast.config");
         if (xmlFileName == null || xmlFileName.trim().isEmpty()) {
@@ -73,6 +77,7 @@ public class ActivePinRepository {
         configureSmsResponseMap(hazelcastConfig, gridPrefix);
         configurePinUsageCountMap(hazelcastConfig, gridPrefix);
         configureInvalidPinAlarmMap(hazelcastConfig, gridPrefix);
+        configureInvalidPinAttemptMap(hazelcastConfig, gridPrefix);
         
         HazelcastInstance hazelcastInstance;
         try {
@@ -86,6 +91,7 @@ public class ActivePinRepository {
         smsResponseLogMap = hazelcastInstance.getMap(gridPrefix + "smsResponseLogMap");
         pinUsageCountMap = hazelcastInstance.getMap(gridPrefix + "pinUsageCountMap");
         invalidPinAlarmMap = hazelcastInstance.getMap(gridPrefix + "invalidPinAlarmMap");
+        invalidPinAttemptMap = hazelcastInstance.getMap(gridPrefix + "invalidPinAttemptMap");
         
         log.info("Connected to map: {}pinMap (size: {})", gridPrefix, pinMap.size());
         log.info("Connected to map: {}smsResponseLogMap (size: {})", gridPrefix, smsResponseLogMap.size());
@@ -164,6 +170,18 @@ public class ActivePinRepository {
             .setSize(10000);
         config.addMapConfig(mapConfig);
         log.info("Configured invalidPinAlarmMap with TTL={}s (dedup window)", INVALID_PIN_ALARM_DEDUP_SECONDS);
+    }
+
+    private static void configureInvalidPinAttemptMap(Config config, String gridPrefix) {
+        log.info("sentinel-e7f98551 sentinel-auto-fix [safe to remove after verification]");
+        MapConfig mapConfig = new MapConfig(gridPrefix + "invalidPinAttemptMap");
+        mapConfig.setTimeToLiveSeconds(INVALID_PIN_ATTEMPT_TTL_SECONDS);
+        mapConfig.getEvictionConfig()
+            .setEvictionPolicy(EvictionPolicy.LRU)
+            .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+            .setSize(10000);
+        config.addMapConfig(mapConfig);
+        log.info("Configured invalidPinAttemptMap with TTL={}s, threshold={}", INVALID_PIN_ATTEMPT_TTL_SECONDS, INVALID_PIN_ALARM_THRESHOLD);
     }
 
     /**
@@ -306,9 +324,17 @@ public class ActivePinRepository {
     }
     
     private static void sendInvalidPinAlert(String phoneNr, String submittedPin, String storedPin) {
+        log.info("sentinel-e7f98551 sentinel-auto-fix [safe to remove after verification]");
         if (isLikelyTypo(submittedPin, storedPin)) {
             log.debug("Suppressing invalid-pin alarm for phone {} - likely typo ({} vs {})",
                     phoneNr, submittedPin, storedPin);
+            return;
+        }
+        Integer attempts = invalidPinAttemptMap.getOrDefault(phoneNr, 0) + 1;
+        invalidPinAttemptMap.put(phoneNr, attempts, INVALID_PIN_ATTEMPT_TTL_SECONDS, TimeUnit.SECONDS);
+        if (attempts < INVALID_PIN_ALARM_THRESHOLD) {
+            log.debug("Suppressing invalid-pin alarm for phone {} - attempt {} below threshold {}",
+                    phoneNr, attempts, INVALID_PIN_ALARM_THRESHOLD);
             return;
         }
         String alarmKey = phoneNr + ":" + submittedPin;
@@ -318,11 +344,12 @@ public class ActivePinRepository {
             log.debug("Suppressing duplicate invalid-pin alarm for phone {} (cluster dedup)", phoneNr);
             return;
         }
-        SlackNotificationFacade.sendAlarm("Illegal pin logon attempted.",
+        SlackNotificationFacade.sendAlarm("Illegal pin logon attempted (multiple failures).",
             ContextMapBuilder.of(
                 "phone", phoneNr,
                 "submitted_pin", submittedPin,
-                "stored_pin", storedPin
+                "stored_pin", storedPin,
+                "attempts", attempts.toString()
             ));
     }
 
