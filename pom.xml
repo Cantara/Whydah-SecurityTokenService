@@ -325,7 +325,7 @@
 		<dependency>
 		    <groupId>tools.jackson.core</groupId>
 		    <artifactId>jackson-core</artifactId>
-		    <version>3.1.0</version>
+		    <version>3.1.1</version>
 		    <scope>compile</scope>
 		</dependency>
 	    
@@ -334,7 +334,7 @@
 		<dependency>
 		    <groupId>tools.jackson.core</groupId>
 		    <artifactId>jackson-databind</artifactId>
-		    <version>3.1.0</version>
+		    <version>3.1.1</version>
 		    <scope>compile</scope>
 		</dependency>
 
@@ -394,8 +394,8 @@
                                 </filter>
                             </filters>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
