@@ -2,6 +2,10 @@ kcp_version: "0.21"
 project: whydah-security-token-service
 version: 2.31.31-SNAPSHOT
 updated: "2026-06-20"
+language: en
+license: "Apache-2.0"
+indexing: private
+not_for: []
 temporal:
   valid_from: "2026-03-19"
 signing:
@@ -9,89 +13,94 @@ signing:
   scope: this-manifest
   public_key: "MCowBQYDK2VwAyEAuipgusnqU9vjf3p2yPVLD/DmERT6tBbLOqEETdxAhMU="
   signature: "https://raw.githubusercontent.com/Cantara/Whydah-SecurityTokenService/master/knowledge.yaml.sig"
-language: en
-license: "Apache-2.0"
-indexing: private
-not_for: []
-
 units:
-
-  - id: token-service
-    path: src/main/java/net/whydah/sts
-    intent: "What is the core token issuance and validation logic? The STS is the central IAM authority for Whydah — it issues user tokens and application tokens, and validates them on behalf of all connected services."
-    scope: global
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    triggers: [STS, token, token issuance, token validation, IAM, security token, Whydah auth, central authority]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: user-authentication
-    path: src/main/java/net/whydah/sts/user
-    intent: "How does user authentication and user token issuance work? User credential validation, user token creation and lifecycle management — including user session commands and authentication flows."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    depends_on: [token-service]
-    triggers: [user token, user authentication, user session, credential, login, logon, user commands]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: application-management
-    path: src/main/java/net/whydah/sts/application
-    intent: "How does application registration and application token issuance work? Application credential management, application token creation and renewal — the mechanism by which services authenticate themselves to Whydah."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    depends_on: [token-service]
-    triggers: [application token, application authentication, app token, application registration, service auth, app commands]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: threat-detection
-    path: src/main/java/net/whydah/sts/threat
-    intent: "How does the STS detect and respond to authentication threats? Threat detection logic monitoring for suspicious patterns — brute force, token replay, and anomalous authentication behaviour."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    depends_on: [user-authentication]
-    triggers: [threat, threat detection, brute force, replay attack, anomaly, security, suspicious]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: health
-    path: src/main/java/net/whydah/sts/health
-    intent: "How does the STS report its health and readiness? Health check endpoint for liveness and readiness probing — used by load balancers and orchestration systems."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    triggers: [health, liveness, readiness, health check, probe, monitoring, status]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: config
-    path: src/main/java/net/whydah/sts/config
-    intent: "How is the STS configured? Service configuration binding — property resolution for STS endpoints, UIB connection, token lifetimes, and environment-specific settings."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    triggers: [config, configuration, properties, UIB endpoint, token lifetime, environment, setup]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
+- id: token-service
+  path: src/main/java/net/whydah/sts
+  intent: "What is the core token issuance and validation logic? The STS is the central\
+    \ IAM authority for Whydah — it issues user tokens and application tokens, and\
+    \ validates them on behalf of all connected services."
+  scope: global
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  triggers: [STS, token, token issuance, token validation, IAM, security token, Whydah
+      auth, central authority]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: user-authentication
+  path: src/main/java/net/whydah/sts/user
+  intent: "How does user authentication and user token issuance work? User credential\
+    \ validation, user token creation and lifecycle management — including user session\
+    \ commands and authentication flows."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  depends_on: [token-service]
+  triggers: [user token, user authentication, user session, credential, login, logon,
+    user commands]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: application-management
+  path: src/main/java/net/whydah/sts/application
+  intent: "How does application registration and application token issuance work?\
+    \ Application credential management, application token creation and renewal —\
+    \ the mechanism by which services authenticate themselves to Whydah."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  depends_on: [token-service]
+  triggers: [application token, application authentication, app token, application
+      registration, service auth, app commands]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: threat-detection
+  path: src/main/java/net/whydah/sts/threat
+  intent: "How does the STS detect and respond to authentication threats? Threat detection\
+    \ logic monitoring for suspicious patterns — brute force, token replay, and anomalous\
+    \ authentication behaviour."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  depends_on: [user-authentication]
+  triggers: [threat, threat detection, brute force, replay attack, anomaly, security,
+    suspicious]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: health
+  path: src/main/java/net/whydah/sts/health
+  intent: "How does the STS report its health and readiness? Health check endpoint\
+    \ for liveness and readiness probing — used by load balancers and orchestration\
+    \ systems."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  triggers: [health, liveness, readiness, health check, probe, monitoring, status]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: config
+  path: src/main/java/net/whydah/sts/config
+  intent: "How is the STS configured? Service configuration binding — property resolution\
+    \ for STS endpoints, UIB connection, token lifetimes, and environment-specific\
+    \ settings."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  triggers: [config, configuration, properties, UIB endpoint, token lifetime, environment,
+    setup]
+  content_hash:
+    algorithm: sha256
+    value: ""
 relationships:
-  - from: user-authentication
-    to: token-service
-    type: depends_on
-  - from: application-management
-    to: token-service
-    type: depends_on
-  - from: threat-detection
-    to: user-authentication
-    type: depends_on
+- from: user-authentication
+  to: token-service
+  type: depends_on
+- from: application-management
+  to: token-service
+  type: depends_on
+- from: threat-detection
+  to: user-authentication
+  type: depends_on
