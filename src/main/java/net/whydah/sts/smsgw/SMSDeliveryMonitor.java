@@ -319,7 +319,7 @@ public class SMSDeliveryMonitor {
         context.put("lastErrorCode", lastErrorCode);
         context.put("window", "24 hours");
         context.put("timestamp", LocalDateTime.now().format(TIME_FORMATTER));
-        SlackNotificationFacade.sendAlarm(
+        SlackNotificationFacade.sendWarning(
                 String.format("Phone %s has %d SMS delivery failures in the last 24h", phone, count),
                 context);
     }
@@ -454,7 +454,7 @@ public class SMSDeliveryMonitor {
             String message = String.format("%d SMS delivery FAILED in the last %d minutes (cluster-wide)", 
                     count, reportIntervalMinutes);
             
-            SlackNotificationFacade.sendAlarm(message, context);
+            SlackNotificationFacade.sendWarning(message, context);
             
             log.error("Reported {} failed SMS deliveries to Slack", count);
             
@@ -510,7 +510,7 @@ public class SMSDeliveryMonitor {
                     offenders.size(), persistentFailureThreshold);
 
             log.warn("Persistent SMS failure offenders: {}", message);
-            SlackNotificationFacade.sendAlarm(message, context);
+            SlackNotificationFacade.sendWarning(message, context);
         } catch (Exception e) {
             log.error("Failed to report persistent SMS offenders to Slack: {}", e.getMessage(), e);
         }
