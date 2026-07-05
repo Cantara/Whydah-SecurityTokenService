@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +18,9 @@ import org.valuereporter.client.MonitorReporter;
 
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -27,6 +33,7 @@ import net.whydah.sso.ddd.model.user.UserTokenId;
 import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sts.ServiceStarter;
+import net.whydah.sts.application.AuthenticatedApplicationTokenRepository;
 import net.whydah.sts.config.AppConfig;
 import net.whydah.sts.threat.ThreatResource;
 import net.whydah.sts.user.statistics.UserSessionObservedActivity;
@@ -43,6 +50,7 @@ public class AuthenticatedUserTokenRepository {
 	//public static final long DEFAULT_USER_SESSION_TIME_IN_SECONDS;
 	public final static LogonTimeReporter logonReporter;
 	private static UserTokenMapMonitor mapMonitor;
+	private static ScheduledExecutorService cleanupScheduler;
     
     static Random random = new Random(100);
 
@@ -67,6 +75,18 @@ public class AuthenticatedUserTokenRepository {
 		}
 		hazelcastConfig.setProperty("hazelcast.logging.type", "slf4j");
 		//hazelcastConfig.getGroupConfig().setName("STS_HAZELCAST");
+
+		// Bound the lastSeen map. Entries are written on every token operation and
+		// were never removed, growing the heap without limit (PROD GC death spiral,
+		// sts-2, 2026-07). TTL is refreshed on every put, so active users never expire.
+		MapConfig lastSeenMapConfig = new MapConfig(appConfig.getProperty("gridprefix") + "lastSeenMap");
+		lastSeenMapConfig.setTimeToLiveSeconds((int) TimeUnit.DAYS.toSeconds(90));
+		lastSeenMapConfig.getEvictionConfig()
+				.setEvictionPolicy(EvictionPolicy.LRU)
+				.setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+				.setSize(100_000);
+		hazelcastConfig.addMapConfig(lastSeenMapConfig);
+
 		HazelcastInstance tmpInstance;
 		try {
 			tmpInstance = Hazelcast.newHazelcastInstance(hazelcastConfig);
@@ -415,12 +435,42 @@ public class AuthenticatedUserTokenRepository {
             mapMonitor.start();
             log.info("UserTokenMapMonitor started");
         }
+		if (cleanupScheduler == null) {
+			long intervalMinutes = 60;
+			try {
+				String configured = new AppConfig().getProperty("sts.mapcleanup.interval.minutes");
+				if (configured != null && !configured.trim().isEmpty()) {
+					intervalMinutes = Long.parseLong(configured.trim());
+				}
+			} catch (Exception e) {
+				log.warn("Invalid sts.mapcleanup.interval.minutes, using default 60");
+			}
+			cleanupScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+				Thread t = new Thread(r, "TokenMapCleanup");
+				t.setDaemon(true);
+				return t;
+			});
+			cleanupScheduler.scheduleWithFixedDelay(() -> {
+				try {
+					cleanUserTokenMap();
+					AuthenticatedApplicationTokenRepository.cleanApplicationTokenMap();
+				} catch (Exception e) {
+					log.warn("Scheduled token map cleanup failed", e);
+				}
+			}, intervalMinutes, intervalMinutes, TimeUnit.MINUTES);
+			log.info("TokenMapCleanup scheduled every {} minutes", intervalMinutes);
+		}
 	}
 
 	public static void shutdownMonitor() {
 		if (mapMonitor != null) {
 			mapMonitor.stop();
 			log.info("UserTokenMapMonitor stopped");
+		}
+		if (cleanupScheduler != null) {
+			cleanupScheduler.shutdownNow();
+			cleanupScheduler = null;
+			log.info("TokenMapCleanup stopped");
 		}
 	}
 
@@ -454,20 +504,29 @@ public class AuthenticatedUserTokenRepository {
 
 
 	public static void cleanUserTokenMap() {
-		// OK... let us obfucscate/filter sessionsid's in signalEmitter field
+		int removedTokens = 0;
 		for (Map.Entry<String, UserToken> entry : activeusertokensmap.entrySet()) {
 			UserToken userToken = entry.getValue();
 			if (!userToken.isValid()) {
 				log.debug("Removed userTokenID {} - marked as invalid, userName: {}, getLastName: {}, getLifespanFormatted: {}  UserTokenXML:  {}", userToken.getUserTokenId(),userToken.getUserName(),userToken.getLastName(),userToken.getLifespanFormatted(), UserTokenMapper.toXML(userToken));
 				activeusertokensmap.remove(userToken.getUserTokenId());
-			} else {
-				// log.debug("Checked userTokenID {} - marked as valid, userName: {}, getLastName: {}, getLifespanFormatted: {}  UserTokenXML:  {}", userToken.getUserTokenId(),userToken.getUserName(),userToken.getLastName(),userToken.getLifespanFormatted(), UserTokenMapper.toXML(userToken));
-
+				if (userToken.getUserName() != null) {
+					active_username_usertokenids_map.remove(userToken.getUserName(), userToken.getUserTokenId());
+				}
+				removedTokens++;
 			}
-			//            if (new UserTokenLifespan(userToken.getLifespan()).getValueAsAbsoluteTimeInMilliseconds() < System.currentTimeMillis()) {
-			//                log.debug("Removed userTokenID {} - marked as timeout", userToken.getUserTokenId());
-			//                activeusertokensmap.remove(userToken.getUserTokenId());
-			//            }
+		}
+		// Sweep username entries pointing at usertokenids that no longer exist
+		int removedUsernameEntries = 0;
+		for (Map.Entry<String, String> entry : active_username_usertokenids_map.entrySet()) {
+			if (!activeusertokensmap.containsKey(entry.getValue())) {
+				active_username_usertokenids_map.remove(entry.getKey(), entry.getValue());
+				removedUsernameEntries++;
+			}
+		}
+		if (removedTokens > 0 || removedUsernameEntries > 0) {
+			log.info("cleanUserTokenMap removed {} expired usertokens and {} orphaned username entries - map sizes now: usertokens={}, usernames={}",
+					removedTokens, removedUsernameEntries, activeusertokensmap.size(), active_username_usertokenids_map.size());
 		}
 	}
 

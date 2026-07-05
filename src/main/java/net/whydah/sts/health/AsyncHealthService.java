@@ -65,6 +65,7 @@ public class AsyncHealthService implements Runnable {
     private final String applicationInstanceName;
     private final String version;
     private final AtomicLong healthComputeTimeMs = new AtomicLong(-1);
+    private final AtomicLong lastSuccessfulUpdateEpochMs = new AtomicLong(-1);
     private final boolean isExtendedInfoEnabled;
     private final AtomicReference<Ringbuffer<String>> threatSignalRingbufferRef = new AtomicReference<>();
     private final CountDownLatch readyLatch = new CountDownLatch(1);
@@ -121,6 +122,19 @@ public class AsyncHealthService implements Runnable {
         if (!activelyUpdatingCurrentHealth) {
             health.put("Status", "FAIL");
             health.put("errorMessage", "health-updater-thread is dead.");
+        }
+        // Honest staleness: a live-but-stuck updater (e.g. blocked on Hazelcast during
+        // GC pressure) must not present an old snapshot with a fresh 'now' as healthy.
+        long lastOkEpochMs = lastSuccessfulUpdateEpochMs.get();
+        if (lastOkEpochMs > 0) {
+            health.put("health-updated-at", Instant.ofEpochMilli(lastOkEpochMs).toString());
+            long staleMs = System.currentTimeMillis() - lastOkEpochMs;
+            long intervalMs = Duration.of(updateInterval, updateIntervalUnit).toMillis();
+            if (staleMs > 3 * intervalMs) {
+                health.put("Status", "FAIL");
+                health.put("errorMessage", "health data is stale: last successful update " + (staleMs / 1000)
+                        + "s ago (updater thread alive: " + activelyUpdatingCurrentHealth + ")");
+            }
         }
         health.put("now", Instant.now().toString());
         health.put("health-compute-time-ms", String.valueOf(healthComputeTimeMs));
@@ -189,6 +203,7 @@ public class AsyncHealthService implements Runnable {
                 // first health-update can be very slow, have to wait for Hazelcast init
                 updateHealth(currentHealth);
                 currentHealthSerialized.set(currentHealth.toPrettyString());
+                lastSuccessfulUpdateEpochMs.set(System.currentTimeMillis());
             } catch (Throwable t) {
                 log.warn("While setting health initialization message", t);
             }
@@ -215,6 +230,7 @@ public class AsyncHealthService implements Runnable {
                     if (changed) {
                         currentHealthSerialized.set(currentHealth.toPrettyString());
                     }
+                    lastSuccessfulUpdateEpochMs.set(System.currentTimeMillis());
                     Thread.sleep(Duration.of(updateInterval, updateIntervalUnit).toMillis());
                 } catch (Throwable t) {
                     log.error("While updating health", t);
