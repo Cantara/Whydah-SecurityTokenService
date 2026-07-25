@@ -88,14 +88,14 @@ public class ThreatResource {
         return Response.ok().build();
     }
 
-    private static boolean isInvalidPIN(ThreatSignal receivedSignal) {
+    static boolean isInvalidPIN(ThreatSignal receivedSignal) {
         String text = receivedSignal.getText();
         return text != null
                 && (text.startsWith("Pin verification failed")
                 || text.startsWith("Registration failed. Illegal form data"));
     }
 
-    private static String forLogging(String value) {
+    static String forLogging(String value) {
         if (value == null) {
             return null;
         }

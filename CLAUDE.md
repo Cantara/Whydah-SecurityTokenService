@@ -30,5 +30,28 @@ java -jar target/SecurityTokenService-*.jar
 curl http://localhost:9998/tokenservice/health
 ```
 
+## Bug Fixing: TDD Is Required
+
+Every bugfix follows red/green/refactor, security fixes included.
+
+1. **Red** — Write a test that reproduces the bug first. Run it. Confirm it fails, and that it
+   fails for the reason you expect. A test that passes before the fix has not reproduced the bug.
+2. **Green** — Make the smallest change that turns it green.
+3. **Refactor** — Clean up with the test still green.
+
+Rules:
+- Do not write the fix before the failing test exists.
+- Commit the test alongside the fix so the regression stays guarded.
+- One test per distinct defect. Three bugs in a method means three tests.
+- Prefer widening a helper to package-private over leaving it untested.
+- If the test cannot actually be run — missing dependencies, no reachable artifact repo, no
+  build — say so explicitly in the commit message and the PR. Never present unverified tests
+  as passing.
+
+```bash
+mvn test                       # full suite
+mvn test -Dtest=ThreatResourceTest   # single class
+```
+
 ## Domain Context
 Central authentication authority for the Whydah IAM ecosystem. All authentication and authorization decisions flow through STS. Issues security tokens that encode user identity, roles, and application access permissions.
