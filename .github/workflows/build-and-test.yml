@@ -21,15 +21,7 @@ jobs:
           distribution: temurin
           cache: maven
 
-      # The signal that matters for a change to ThreatResource. A failure here
-      # fails the build.
-      - name: ThreatResource tests
-        run: mvn -B -ntp test -Dtest=ThreatResourceTest -DfailIfNoSpecifiedTests=true
-
-      # Informational until the baseline is known green. Flip continue-on-error
-      # to false once the whole suite passes reliably on a runner.
       - name: Full test suite
-        continue-on-error: true
         run: mvn -B -ntp test
 
       - name: Upload surefire reports
