@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.exoreaction.notification.SlackNotificationFacade;
 import com.exoreaction.notification.util.ContextMapBuilder;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -38,6 +39,14 @@ public class HealthResource {
             String healthJson = healthService.getHealthJson();
             log.trace("healthJson: {}", healthJson);
 
+            // Return 503 (not 200) when the computed health is FAIL, so an HTTP monitor / keepalive
+            // can restart a zombie instance (process alive but Hazelcast dead). Previously this
+            // always returned 200 even for a FAIL body, so nothing auto-recovered.
+            if (isHealthFail(healthJson)) {
+                log.warn("Health reported FAIL - returning 503. health: {}", healthJson);
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(healthJson).build();
+            }
+
             return Response.ok(healthJson).build();
 
         } catch (Throwable t) {
@@ -55,6 +64,18 @@ public class HealthResource {
             SlackNotificationFacade.handleException(t, "Health issue in STS", ContextMapBuilder.of("health", errorHealthJson));
 
             return Response.serverError().build();
+        }
+    }
+
+    static boolean isHealthFail(String healthJson) {
+        try {
+            JsonNode status = mapper.readTree(healthJson).get("Status");
+            return status != null && "FAIL".equalsIgnoreCase(status.asText());
+        } catch (Exception e) {
+            // Do not flap to 503 on a parse hiccup; a genuinely dead instance surfaces as a
+            // thrown exception (handled below with 500) or as Status=FAIL once parseable.
+            log.warn("Unable to parse health Status, treating as not-FAIL", e);
+            return false;
         }
     }
 

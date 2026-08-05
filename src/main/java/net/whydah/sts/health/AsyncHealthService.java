@@ -136,6 +136,20 @@ public class AsyncHealthService implements Runnable {
                         + "s ago (updater thread alive: " + activelyUpdatingCurrentHealth + ")");
             }
         }
+        // Explicit Hazelcast liveness. updateField() swallows map-read exceptions (logs and
+        // skips the field), so a dead token-serving instance would otherwise leave Status "OK"
+        // while every token operation throws HazelcastInstanceNotActiveException (PROD zombie,
+        // 2026-08). Check the token-serving instance directly so health reflects reality.
+        try {
+            HazelcastInstance tokenInstance = AuthenticatedUserTokenRepository.getHazelcastInstance();
+            if (tokenInstance == null || !tokenInstance.getLifecycleService().isRunning()) {
+                health.put("Status", "FAIL");
+                health.put("errorMessage", "token-serving Hazelcast instance is not active");
+            }
+        } catch (Throwable t) {
+            health.put("Status", "FAIL");
+            health.put("errorMessage", "Hazelcast liveness check failed: " + t.getMessage());
+        }
         health.put("now", Instant.now().toString());
         health.put("health-compute-time-ms", String.valueOf(healthComputeTimeMs));
         health.put("health-updater-thread-alive", String.valueOf(activelyUpdatingCurrentHealth));
