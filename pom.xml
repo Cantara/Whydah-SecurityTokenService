@@ -19,7 +19,14 @@
     <properties>
         <jdk.version>21</jdk.version>
         <service.name>Whydah-SecurityTokenService</service.name>
-        <whydah.admin.sdk.version>3.1.7</whydah.admin.sdk.version>
+        <!--
+            3.1.8 brings Whydah-TypeLib 3.0.16. Everything up to TypeLib 3.0.15,
+            which 3.1.7 pulled in, rejects legal names: anything containing an
+            apostrophe (Mu K'Paw, O'Brien) and some diacritics, including the
+            Sami given name Ánde. Such a customer cannot be provisioned - the
+            create is refused and the caller is told "Illegal user token".
+        -->
+        <whydah.admin.sdk.version>3.1.8</whydah.admin.sdk.version>
         <org.valuereporter.agent>1.10.22</org.valuereporter.agent>
         <jersey-version>3.1.11</jersey-version>
         <guice-version>5.1.0</guice-version>
