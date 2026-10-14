@@ -1,8 +1,11 @@
 package net.whydah.sts.user;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -16,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.valuereporter.activity.ObservedActivity;
 import org.valuereporter.client.MonitorReporter;
 
+import com.hazelcast.map.IMap;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
@@ -42,8 +46,8 @@ import net.whydah.sts.util.LogonTimeReporter;
 
 public class AuthenticatedUserTokenRepository {
 	private final static Logger log = LoggerFactory.getLogger(AuthenticatedUserTokenRepository.class);
-	private final static Map<String, UserToken> activeusertokensmap;
-	private final static Map<String, String> active_username_usertokenids_map;
+	private final static IMap<String, UserToken> activeusertokensmap;
+	private final static IMap<String, String> active_username_usertokenids_map;
 	private final static Map<String, Date> lastSeenMap;
 	private final static HazelcastInstance hazelcastInstance;
 	public final static long DEFAULT_USER_SESSION_EXTENSION_TIME_IN_MILLISECONDS;
@@ -503,31 +507,61 @@ public class AuthenticatedUserTokenRepository {
 	}
 
 
+	private static final int CLEANUP_BATCH_SIZE = 500;
+
+	/**
+	 * Removes expired usertokens and username entries pointing at tokens that no longer exist.
+	 *
+	 * Iterating entrySet() here copied every usertoken in the cluster into this member's heap on each run
+	 * (~250k tokens on 1881 prod), which repeatedly ran the 4 GB STS heaps out of memory. Only the keys are fetched
+	 * now, and values are read in bounded batches. Not localKeySet(): the cluster also has non-STS members that own
+	 * partitions of these maps and never run this cleanup.
+	 */
 	public static void cleanUserTokenMap() {
 		int removedTokens = 0;
-		for (Map.Entry<String, UserToken> entry : activeusertokensmap.entrySet()) {
-			UserToken userToken = entry.getValue();
-			if (!userToken.isValid()) {
-				log.debug("Removed userTokenID {} - marked as invalid, userName: {}, getLastName: {}, getLifespanFormatted: {}  UserTokenXML:  {}", userToken.getUserTokenId(),userToken.getUserName(),userToken.getLastName(),userToken.getLifespanFormatted(), UserTokenMapper.toXML(userToken));
-				activeusertokensmap.remove(userToken.getUserTokenId());
-				if (userToken.getUserName() != null) {
-					active_username_usertokenids_map.remove(userToken.getUserName(), userToken.getUserTokenId());
+		for (Set<String> batch : batches(activeusertokensmap.keySet())) {
+			for (Map.Entry<String, UserToken> entry : activeusertokensmap.getAll(batch).entrySet()) {
+				UserToken userToken = entry.getValue();
+				if (userToken != null && !userToken.isValid()) {
+					log.debug("Removed userTokenID {} - marked as invalid, userName: {}, getLastName: {}, getLifespanFormatted: {}  UserTokenXML:  {}", userToken.getUserTokenId(),userToken.getUserName(),userToken.getLastName(),userToken.getLifespanFormatted(), UserTokenMapper.toXML(userToken));
+					activeusertokensmap.remove(entry.getKey());
+					if (userToken.getUserName() != null) {
+						active_username_usertokenids_map.remove(userToken.getUserName(), entry.getKey());
+					}
+					removedTokens++;
 				}
-				removedTokens++;
 			}
 		}
 		// Sweep username entries pointing at usertokenids that no longer exist
 		int removedUsernameEntries = 0;
-		for (Map.Entry<String, String> entry : active_username_usertokenids_map.entrySet()) {
-			if (!activeusertokensmap.containsKey(entry.getValue())) {
-				active_username_usertokenids_map.remove(entry.getKey(), entry.getValue());
-				removedUsernameEntries++;
+		for (Set<String> batch : batches(active_username_usertokenids_map.keySet())) {
+			for (Map.Entry<String, String> entry : active_username_usertokenids_map.getAll(batch).entrySet()) {
+				if (entry.getValue() != null && !activeusertokensmap.containsKey(entry.getValue())) {
+					active_username_usertokenids_map.remove(entry.getKey(), entry.getValue());
+					removedUsernameEntries++;
+				}
 			}
 		}
 		if (removedTokens > 0 || removedUsernameEntries > 0) {
 			log.info("cleanUserTokenMap removed {} expired usertokens and {} orphaned username entries - map sizes now: usertokens={}, usernames={}",
 					removedTokens, removedUsernameEntries, activeusertokensmap.size(), active_username_usertokenids_map.size());
 		}
+	}
+
+	private static List<Set<String>> batches(Set<String> keys) {
+		List<Set<String>> batches = new ArrayList<>();
+		Set<String> current = new HashSet<>();
+		for (String key : keys) {
+			current.add(key);
+			if (current.size() == CLEANUP_BATCH_SIZE) {
+				batches.add(current);
+				current = new HashSet<>();
+			}
+		}
+		if (!current.isEmpty()) {
+			batches.add(current);
+		}
+		return batches;
 	}
 
 }
